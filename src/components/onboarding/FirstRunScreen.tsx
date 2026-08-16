@@ -84,7 +84,7 @@ export default function FirstRunScreen({ onReady }: { onReady: () => void }) {
               />
             </div>
             <div className="flex items-center justify-between font-mono text-xs text-muted">
-              <span>{modelProgress?.text ?? 'Preparing…'}</span>
+              <span>{modelProgress ? 'Downloading…' : 'Preparing…'}</span>
               <span>{pct}%</span>
             </div>
           </div>
