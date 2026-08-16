@@ -13,7 +13,7 @@ export interface DocumentRecord {
   status: DocumentStatus;
   errorMessage?: string;
   /** Only meaningful while status is 'embedding'; not persisted, purely a live progress readout. */
-  embedProgress?: { completed: number; total: number };
+  embedProgress?: { completed: number; total: number; etaSeconds?: number };
 }
 
 export interface ChunkRecord {

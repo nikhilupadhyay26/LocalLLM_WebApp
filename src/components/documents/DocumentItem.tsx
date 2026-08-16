@@ -1,6 +1,6 @@
 import type { DocumentRecord } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
-import { buildSupportMailto } from '@/lib/support';
+import { buildSupportMailto, SUPPORT_EMAIL } from '@/lib/support';
 
 const STATUS_LABEL: Record<DocumentRecord['status'], string> = {
   parsing: 'Reading…',
@@ -8,6 +8,15 @@ const STATUS_LABEL: Record<DocumentRecord['status'], string> = {
   ready: 'Ready',
   error: 'Error',
 };
+
+function formatEta(seconds: number): string {
+  if (seconds < 60) return '<1m left';
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `~${minutes}m left`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return `~${hours}h ${remainingMinutes}m left`;
+}
 
 interface DocumentItemProps {
   doc: DocumentRecord;
@@ -49,15 +58,20 @@ export default function DocumentItem({ doc, selected, onToggle }: DocumentItemPr
             }`}
           >
             {doc.status === 'embedding' && doc.embedProgress
-              ? `Indexing… ${doc.embedProgress.completed}/${doc.embedProgress.total}`
+              ? `Indexing… ${doc.embedProgress.completed}/${doc.embedProgress.total}${
+                  doc.embedProgress.etaSeconds != null ? ` (${formatEta(doc.embedProgress.etaSeconds)})` : ''
+                }`
               : STATUS_LABEL[doc.status]}
           </span>
           {doc.status === 'error' && doc.errorMessage && (
             <span className="mt-0.5 block text-xs text-red-400">
-              {doc.errorMessage}{' '}
+              {doc.errorMessage}
+              <br />
+              Having trouble, or found a bug? Email us at{' '}
               <a href={buildSupportMailto('PouchLM: document failed to process')} className="underline">
-                Need help?
+                {SUPPORT_EMAIL}
               </a>
+              . Our team usually responds within 24 hours.
             </span>
           )}
         </span>

@@ -126,9 +126,15 @@ export const useAppStore = create<AppState>((set, get) => ({
         return;
       }
 
+      const embedStartedAt = Date.now();
       const embeddings = await embedTexts(pieces, (completed, total) => {
+        // Estimated from this document's own observed rate so far, not a
+        // guess: large documents can genuinely take tens of minutes, and a
+        // bare "340/12000" reads as "stuck" without a real time estimate.
+        const elapsedMs = Date.now() - embedStartedAt;
+        const etaSeconds = completed > 0 ? Math.round(((total - completed) * elapsedMs) / completed / 1000) : undefined;
         set((s) => ({
-          documents: s.documents.map((d) => (d.id === id ? { ...d, embedProgress: { completed, total } } : d)),
+          documents: s.documents.map((d) => (d.id === id ? { ...d, embedProgress: { completed, total, etaSeconds } } : d)),
         }));
       });
       if (import.meta.env.DEV) console.log(`[ingest:${fileType}] embedding complete`, { id, vectorCount: embeddings.length });
