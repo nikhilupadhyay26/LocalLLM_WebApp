@@ -4,7 +4,15 @@
 // standard Cache Storage, managed by @mlc-ai/web-llm and
 // @huggingface/transformers; this worker doesn't need to know about it.
 
-const CACHE_NAME = 'pouchlm-shell-v2';
+// Every cache this worker creates is named with this prefix. Cleanup below
+// only ever touches caches matching it, never a bare exact-name exclusion:
+// the AI model's own caches (webllm/*, transformers-cache) live in the same
+// origin-wide Cache Storage and share no naming scheme with this worker, so
+// a broader "delete anything that isn't my current name" filter would wipe
+// a user's already-downloaded model on every app-shell cache bump, forcing
+// a full re-download for no reason connected to the model at all.
+const CACHE_PREFIX = 'pouchlm-shell-';
+const CACHE_NAME = `${CACHE_PREFIX}v2`;
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -12,7 +20,9 @@ self.addEventListener('install', () => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))),
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith(CACHE_PREFIX) && k !== CACHE_NAME).map((k) => caches.delete(k)))),
   );
   self.clients.claim();
 });
