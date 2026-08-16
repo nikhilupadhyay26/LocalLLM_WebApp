@@ -8,7 +8,7 @@ export default function PrivacyPage() {
       </Link>
       <h1 className="mb-2 text-2xl font-medium text-primary">Privacy</h1>
       <p className="mb-8 text-sm text-secondary">
-        This is a literal account of what Hermit does and doesn't send over the network, not a marketing summary.
+        This is a literal account of what PouchLM does and doesn't send over the network, not a marketing summary.
       </p>
 
       <section className="mb-8">
@@ -28,7 +28,7 @@ export default function PrivacyPage() {
       <section className="mb-8">
         <h2 className="mb-2 text-sm font-medium text-primary">What about the ~1GB model download?</h2>
         <p className="text-sm text-secondary">
-          On first use, Hermit downloads the AI model itself (a public set of model weights, not anything about
+          On first use, PouchLM downloads the AI model itself (a public set of model weights, not anything about
           you) from a content delivery network, the same way any web app downloads its own code and assets. This
           contains no document content and no personal data; it's the software, not your data. It's cached by your
           browser so it only happens once.
@@ -38,7 +38,7 @@ export default function PrivacyPage() {
       <section className="mb-8">
         <h2 className="mb-2 text-sm font-medium text-primary">No accounts, no tracking</h2>
         <p className="text-sm text-secondary">
-          Hermit has no login, no user accounts, and no analytics, cookies, fingerprinting, or third-party embeds
+          PouchLM has no login, no user accounts, and no analytics, cookies, fingerprinting, or third-party embeds
           of any kind.
         </p>
       </section>

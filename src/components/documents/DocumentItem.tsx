@@ -53,7 +53,7 @@ export default function DocumentItem({ doc, selected, onToggle }: DocumentItemPr
           {doc.status === 'error' && doc.errorMessage && (
             <span className="mt-0.5 block text-xs text-red-400">
               {doc.errorMessage}{' '}
-              <a href={buildSupportMailto('Hermit: document failed to process')} className="underline">
+              <a href={buildSupportMailto('PouchLM: document failed to process')} className="underline">
                 Need help?
               </a>
             </span>

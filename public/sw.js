@@ -1,10 +1,10 @@
 // Minimal offline-caching service worker. It caches the app shell (the
-// static build output) so Hermit loads instantly and works offline on
+// static build output) so PouchLM loads instantly and works offline on
 // repeat visits. The AI model itself is cached separately by the browser's
 // standard Cache Storage, managed by @mlc-ai/web-llm and
 // @huggingface/transformers; this worker doesn't need to know about it.
 
-const CACHE_NAME = 'hermit-shell-v1';
+const CACHE_NAME = 'pouchlm-shell-v1';
 
 self.addEventListener('install', () => {
   self.skipWaiting();

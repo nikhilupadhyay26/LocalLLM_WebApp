@@ -34,7 +34,7 @@ export default function SettingsPage() {
       <section className="card mb-6 p-5">
         <h2 className="mb-2 text-sm font-medium text-primary">Model</h2>
         <p className="text-sm text-secondary">
-          Hermit runs the {MODEL_LABEL} ({MODEL_SIZE}) entirely on your device.
+          PouchLM runs the {MODEL_LABEL} ({MODEL_SIZE}) entirely on your device.
         </p>
       </section>
 
@@ -43,7 +43,7 @@ export default function SettingsPage() {
         <p className="text-sm text-secondary">
           {usage ? (
             <>
-              Hermit is using approximately{' '}
+              PouchLM is using approximately{' '}
               <span className="text-primary">{formatBytes(usage.usageBytes)}</span> of your browser's storage
               (includes the cached AI model).
             </>

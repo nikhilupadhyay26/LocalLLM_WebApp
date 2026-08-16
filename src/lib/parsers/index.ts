@@ -22,7 +22,7 @@ export function detectFileType(filename: string): FileType {
   const type = EXTENSION_MAP[ext];
   if (!type) {
     throw new UnsupportedFileError(
-      `"${filename}" isn't a supported file type. Hermit reads PDF, DOCX, CSV/TSV, and TXT files.`,
+      `"${filename}" isn't a supported file type. PouchLM reads PDF, DOCX, CSV/TSV, and TXT files.`,
     );
   }
   return type;
@@ -32,7 +32,7 @@ export function validateFile(file: File): FileType {
   const type = detectFileType(file.name);
   if (file.size > MAX_FILE_SIZE_BYTES) {
     throw new FileTooLargeError(
-      `"${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)}MB, which is over Hermit's 25MB per-file limit.`,
+      `"${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)}MB, which is over PouchLM's 25MB per-file limit.`,
     );
   }
   return type;

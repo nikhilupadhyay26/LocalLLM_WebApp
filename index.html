@@ -7,14 +7,14 @@
     <meta name="color-scheme" content="dark" />
     <meta
       name="description"
-      content="Hermit: AI that helps with your paperwork without ever seeing your paperwork. Chat with your documents entirely on your own device."
+      content="PouchLM: AI that helps with your paperwork without ever seeing your paperwork. Chat with your documents entirely on your own device."
     />
-    <title>Hermit: AI for your documents, entirely on your device</title>
+    <title>PouchLM: AI for your documents, entirely on your device</title>
     <script>
       // Runs before React mounts so the model-loaded flag can't flash. Reads
       // only a local flag; does not itself contact any server.
       try {
-        if (localStorage.getItem('hermit_theme') === 'light') {
+        if (localStorage.getItem('pouchlm_theme') === 'light') {
           document.documentElement.classList.add('light');
         }
       } catch {

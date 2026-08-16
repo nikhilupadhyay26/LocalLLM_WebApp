@@ -19,7 +19,7 @@ export default function TopBar() {
     <header className="flex h-14 items-center justify-between border-b border-ink-800 px-4">
       <Link to="/" className="flex items-center gap-2.5 text-base font-semibold text-primary">
         <img src="/icon.png" alt="" className="h-9 w-9 rounded-md" />
-        Hermit
+        PouchLM
       </Link>
 
       <div className="flex items-center gap-3">

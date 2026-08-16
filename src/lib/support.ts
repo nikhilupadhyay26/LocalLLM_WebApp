@@ -4,7 +4,7 @@ export const SUPPORT_EMAIL = 'support@thataibuddy.com';
  * Prefills subject and browser/OS info so bug reports are easier to triage
  * without asking the user to dig that up themselves.
  */
-export function buildSupportMailto(subject = 'Hermit Support', extraDetails?: string): string {
+export function buildSupportMailto(subject = 'PouchLM Support', extraDetails?: string): string {
   const body = [
     'Please describe what happened below.',
     '',

@@ -1,7 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { ChatSession, ChunkRecord, DocumentRecord } from '@/types';
 
-interface HermitDB extends DBSchema {
+interface PouchLMDB extends DBSchema {
   documents: {
     key: string;
     value: DocumentRecord;
@@ -19,14 +19,14 @@ interface HermitDB extends DBSchema {
   };
 }
 
-const DB_NAME = 'hermit';
+const DB_NAME = 'pouchlm';
 const DB_VERSION = 1;
 
-let dbPromise: Promise<IDBPDatabase<HermitDB>> | null = null;
+let dbPromise: Promise<IDBPDatabase<PouchLMDB>> | null = null;
 
-export function getDB(): Promise<IDBPDatabase<HermitDB>> {
+export function getDB(): Promise<IDBPDatabase<PouchLMDB>> {
   if (!dbPromise) {
-    dbPromise = openDB<HermitDB>(DB_NAME, DB_VERSION, {
+    dbPromise = openDB<PouchLMDB>(DB_NAME, DB_VERSION, {
       upgrade(db) {
         const documents = db.createObjectStore('documents', { keyPath: 'id' });
         documents.createIndex('by-uploadedAt', 'uploadedAt');

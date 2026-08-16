@@ -1,4 +1,8 @@
-![Hermit](.github/banner.png)
+<p align="center">
+  <img src="public/icon.png" width="140" alt="PouchLM" />
+</p>
+
+# PouchLM
 
 AI that helps with your paperwork without ever seeing your paperwork.
 
@@ -11,7 +15,7 @@ This is a deliberately minimal v1: chat only, one model, completely free. More f
 - **Static site.** `npm run build` produces a `dist/` folder deployable to any CDN. No server code, no API routes.
 - **In-browser inference.** Chat runs on [WebLLM](https://github.com/mlc-ai/web-llm) (WebGPU), embeddings run on [Transformers.js](https://github.com/huggingface/transformers.js). Both execute in Web Workers.
 - **Local-only data.** Documents, chunks, embeddings, and chats live in IndexedDB (`src/lib/db.ts`). Onboarding/session flags live in `localStorage`.
-- **No network exceptions.** The only network requests Hermit ever makes are the one-time AI model download; see [Privacy page](src/pages/PrivacyPage.tsx).
+- **No network exceptions.** The only network requests PouchLM ever makes are the one-time AI model download; see [Privacy page](src/pages/PrivacyPage.tsx).
 
 ## Getting started
 

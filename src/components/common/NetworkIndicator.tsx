@@ -49,7 +49,7 @@ export default function NetworkIndicator() {
         >
           <p className="mono-tag mb-2">Live request log</p>
           <p className="mb-3 text-secondary">
-            This is every network request Hermit has made this session. Document content and chat never appear
+            This is every network request PouchLM has made this session. Document content and chat never appear
             here. Those never leave your device.
           </p>
           {log.length === 0 ? (

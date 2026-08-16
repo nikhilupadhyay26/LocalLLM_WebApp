@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
-// Hermit is a 100% static build: no server code, no API routes, no env
+// PouchLM is a 100% static build: no server code, no API routes, no env
 // secrets. `dist/` is deployable to any CDN as-is.
 export default defineConfig({
   plugins: [react()],

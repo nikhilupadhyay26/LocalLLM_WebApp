@@ -24,24 +24,26 @@ export default function LandingPage() {
       <header className="mx-auto flex max-w-5xl items-center justify-between px-6 py-6">
         <div className="flex items-center gap-3 text-xl font-semibold text-primary">
           <img src="/icon.png" alt="" className="h-11 w-11 rounded-md" />
-          Hermit
+          PouchLM
         </div>
         <nav className="flex items-center gap-4 text-sm text-secondary">
           <Link to="/privacy" className="hover:text-primary">
             Privacy
           </Link>
           <Link to="/app" className="btn-primary !px-4 !py-1.5">
-            Try it
+            Try it Locally
           </Link>
         </nav>
       </header>
 
-      <main className="mx-auto max-w-3xl px-6 pb-24 pt-16 text-center">
+      <main className="mx-auto max-w-5xl px-6 pb-24 pt-16 text-center">
         <p className="mono-tag mb-4">100% local · No account required</p>
-        <h1 className="mb-5 text-4xl font-medium leading-tight text-primary sm:text-5xl">
-          AI that helps with your paperwork
+        <h1 className="mb-5 text-[2.75rem] font-medium !leading-relaxed tracking-tight text-primary sm:text-5xl">
+          Chat With Your Documents
           <br />
-          without ever seeing your paperwork
+          Analyze Paperwork Locally
+          <br />
+          Keep Your Data Secure
         </h1>
         <p className="mx-auto mb-8 max-w-xl text-secondary">
           Chat with and search your invoices, contracts, and customer files. Nothing ever leaves your device.
@@ -49,18 +51,18 @@ export default function LandingPage() {
         </p>
         <div className="flex items-center justify-center gap-3">
           <Link to="/app" className="btn-primary !px-6 !py-3">
-            Try it
+            Launch Local Assistant
           </Link>
           <a href="#how-it-works" className="btn-secondary !px-6 !py-3">
-            How it works
+            See How it works
           </a>
         </div>
-        <p className="mt-4 text-xs text-muted">No signup required to start.</p>
+        <p className="mt-4 text-xs text-muted">No signup required to start</p>
       </main>
 
       <section id="how-it-works" className="border-y border-ink-800 bg-ink-900/40 py-16">
         <div className="mx-auto max-w-5xl px-6">
-          <p className="mono-tag mb-8 text-center">How it works</p>
+          <p className="mono-tag mb-8 text-center">See How it works</p>
           <div className="grid gap-6 sm:grid-cols-3">
             {STEPS.map((step, i) => (
               <div key={step.title} className="card p-5">
