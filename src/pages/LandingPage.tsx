@@ -3,16 +3,17 @@ import { useUiStore } from '@/store/useUiStore';
 
 const STEPS = [
   {
-    title: 'Upload',
-    body: 'Drop in invoices, contracts, customer records: PDF, DOCX, CSV, or TXT. Parsing happens in your browser.',
+    title: 'Upload your documents',
+    body: "PDFs, contracts, invoices, whatever you're working with.",
   },
   {
-    title: 'Ask',
-    body: 'Chat with your documents and get answers grounded in what they actually say. Nothing is sent anywhere to do it.',
+    title: 'We download a small AI model',
+    body:
+      "Just once, about 1GB, similar to installing an app. This is what lets everything run right here on your device instead of on someone else's server.",
   },
   {
-    title: 'Keep working',
-    body: 'Everything is saved locally and picks up right where you left off, even offline, on your next visit.',
+    title: 'Chat and search, completely private',
+    body: 'Because the AI runs locally, nothing you upload is ever sent anywhere. Every visit after the first is instant.',
   },
 ];
 
