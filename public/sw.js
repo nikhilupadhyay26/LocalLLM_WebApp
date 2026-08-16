@@ -4,7 +4,7 @@
 // standard Cache Storage, managed by @mlc-ai/web-llm and
 // @huggingface/transformers; this worker doesn't need to know about it.
 
-const CACHE_NAME = 'pouchlm-shell-v1';
+const CACHE_NAME = 'pouchlm-shell-v2';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -24,6 +24,21 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return; // never intercept cross-origin (model asset) requests
 
+  // Network-First strategy for HTML documents (ensures we always get the newest version)
+  if (request.mode === 'navigate' || request.headers.get('accept').includes('text/html')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // Cache-First (Stale-While-Revalidate) strategy for other assets (JS, CSS, Images)
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {
       const cached = await cache.match(request);
