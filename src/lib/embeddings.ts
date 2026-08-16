@@ -1,13 +1,19 @@
 import type { EmbedRequest, EmbedResponse } from './embeddings.worker';
 
-// Generous, but a hard ceiling: a document must never be able to sit on
-// "Indexing…" forever with no feedback (see change request: TXT stuck on
-// Indexing indefinitely). The embedding model can be slow to warm up on
-// first use, so this is minutes, not seconds.
-const EMBED_TIMEOUT_MS = 120_000;
+// The worker embeds in small batches (see embeddings.worker.ts) and reports
+// progress after each one, so this only needs to cover the time between two
+// consecutive batches (or, for the very first batch, the one-time model
+// download/warmup), not the whole document regardless of size. A stall of
+// this long with zero progress means something is actually stuck, not just
+// a large document taking a while (see change request: TXT stuck on
+// Indexing indefinitely).
+const EMBED_STALL_TIMEOUT_MS = 60_000;
 
 let worker: Worker | null = null;
-const pending = new Map<string, { resolve: (v: number[][]) => void; reject: (e: Error) => void }>();
+const pending = new Map<
+  string,
+  { resolve: (v: number[][]) => void; reject: (e: Error) => void; onProgress?: (completed: number, total: number) => void }
+>();
 
 function failAllPending(message: string) {
   for (const entry of pending.values()) entry.reject(new Error(message));
@@ -21,6 +27,10 @@ function getWorker(): Worker {
       const msg = event.data;
       const entry = pending.get(msg.id);
       if (!entry) return;
+      if (msg.type === 'progress') {
+        entry.onProgress?.(msg.completed, msg.total);
+        return;
+      }
       pending.delete(msg.id);
       if (msg.type === 'result') entry.resolve(msg.embeddings);
       else entry.reject(new Error(msg.message));
@@ -37,16 +47,24 @@ function getWorker(): Worker {
   return worker;
 }
 
-export function embedTexts(texts: string[]): Promise<number[][]> {
+export function embedTexts(
+  texts: string[],
+  onProgress?: (completed: number, total: number) => void,
+): Promise<number[][]> {
   if (texts.length === 0) return Promise.resolve([]);
   const id = crypto.randomUUID();
   const w = getWorker();
   return new Promise<number[][]>((resolve, reject) => {
-    const timeoutId = setTimeout(() => {
-      if (pending.delete(id)) {
-        reject(new Error('Embedding this document is taking far longer than expected. Try again.'));
-      }
-    }, EMBED_TIMEOUT_MS);
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const armTimeout = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        if (pending.delete(id)) {
+          reject(new Error('Embedding this document stalled with no progress. Try again.'));
+        }
+      }, EMBED_STALL_TIMEOUT_MS);
+    };
+    armTimeout();
 
     pending.set(id, {
       resolve: (v) => {
@@ -56,6 +74,10 @@ export function embedTexts(texts: string[]): Promise<number[][]> {
       reject: (e) => {
         clearTimeout(timeoutId);
         reject(e);
+      },
+      onProgress: (completed, total) => {
+        armTimeout();
+        onProgress?.(completed, total);
       },
     });
     const req: EmbedRequest = { type: 'embed', id, texts };

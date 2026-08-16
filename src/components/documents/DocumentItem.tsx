@@ -48,7 +48,9 @@ export default function DocumentItem({ doc, selected, onToggle }: DocumentItemPr
               doc.status === 'error' ? 'text-red-400' : busy ? 'text-muted' : 'text-signal-dim'
             }`}
           >
-            {STATUS_LABEL[doc.status]}
+            {doc.status === 'embedding' && doc.embedProgress
+              ? `Indexing… ${doc.embedProgress.completed}/${doc.embedProgress.total}`
+              : STATUS_LABEL[doc.status]}
           </span>
           {doc.status === 'error' && doc.errorMessage && (
             <span className="mt-0.5 block text-xs text-red-400">

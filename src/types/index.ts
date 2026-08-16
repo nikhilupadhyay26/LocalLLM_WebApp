@@ -12,6 +12,8 @@ export interface DocumentRecord {
   charCount: number;
   status: DocumentStatus;
   errorMessage?: string;
+  /** Only meaningful while status is 'embedding'; not persisted, purely a live progress readout. */
+  embedProgress?: { completed: number; total: number };
 }
 
 export interface ChunkRecord {

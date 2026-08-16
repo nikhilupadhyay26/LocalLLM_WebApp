@@ -42,6 +42,7 @@ interface AppState {
   startChatSession: (documentIds: string[]) => Promise<string>;
   setActiveChat: (id: string | null) => void;
   renameSession: (id: string, title: string) => Promise<void>;
+  updateSessionDocuments: (id: string, documentIds: string[]) => Promise<void>;
   deleteSession: (id: string) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
   generatingSessionIds: string[];
@@ -125,7 +126,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         return;
       }
 
-      const embeddings = await embedTexts(pieces);
+      const embeddings = await embedTexts(pieces, (completed, total) => {
+        set((s) => ({
+          documents: s.documents.map((d) => (d.id === id ? { ...d, embedProgress: { completed, total } } : d)),
+        }));
+      });
       if (import.meta.env.DEV) console.log(`[ingest:${fileType}] embedding complete`, { id, vectorCount: embeddings.length });
       const chunks: ChunkRecord[] = pieces.map((text, i) => ({
         id: `${id}-${i}`,
@@ -192,6 +197,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     const trimmed = title.trim();
     if (!trimmed) return;
     const updated: ChatSession = { ...session, title: trimmed };
+    await db.putChatSession(updated);
+    set((s) => ({ chatSessions: s.chatSessions.map((c) => (c.id === id ? updated : c)) }));
+  },
+  // Lets a chat's document scope change mid-conversation (toggling a
+  // checkbox in the sidebar) instead of forcing a new chat every time.
+  // Past messages keep whatever they were actually grounded in via their
+  // own citedChunkIds; this only affects retrieval for turns sent after
+  // the change.
+  async updateSessionDocuments(id, documentIds) {
+    const session = get().chatSessions.find((c) => c.id === id);
+    if (!session) return;
+    const updated: ChatSession = { ...session, documentIds };
     await db.putChatSession(updated);
     set((s) => ({ chatSessions: s.chatSessions.map((c) => (c.id === id ? updated : c)) }));
   },

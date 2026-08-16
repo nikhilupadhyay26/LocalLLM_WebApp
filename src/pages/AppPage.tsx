@@ -13,6 +13,7 @@ export default function AppPage() {
   const loadDocuments = useAppStore((s) => s.loadDocuments);
   const loadChatSessions = useAppStore((s) => s.loadChatSessions);
   const setActiveChat = useAppStore((s) => s.setActiveChat);
+  const updateSessionDocuments = useAppStore((s) => s.updateSessionDocuments);
   const ensureModelLoaded = useAppStore((s) => s.ensureModelLoaded);
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -42,8 +43,15 @@ export default function AppPage() {
   }, [webgpuStatus, onboardingComplete]);
 
   const toggleDoc = (id: string) => {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-    setActiveChat(null);
+    setSelectedIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      // Changing which documents are in scope shouldn't blow away the
+      // conversation: update the active chat's own scope so the next
+      // message reflects it, instead of forcing a brand new chat.
+      const { activeChatId } = useAppStore.getState();
+      if (activeChatId) void updateSessionDocuments(activeChatId, next);
+      return next;
+    });
   };
 
   const loadSession = (documentIds: string[]) => {

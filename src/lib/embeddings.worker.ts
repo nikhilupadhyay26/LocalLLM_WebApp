@@ -22,7 +22,15 @@ function getExtractor(): Promise<Extractor> {
 export type EmbedRequest = { type: 'embed'; id: string; texts: string[] };
 export type EmbedResponse =
   | { type: 'result'; id: string; embeddings: number[][] }
+  | { type: 'progress'; id: string; completed: number; total: number }
   | { type: 'error'; id: string; message: string };
+
+// A single extractor(texts, ...) call over thousands of chunks (a large PDF
+// easily produces this many) builds one giant batch tensor and can exhaust
+// the WASM runtime's memory, aborting with a raw (non-Error) throw rather
+// than failing gracefully. Batching keeps peak memory bounded regardless of
+// document size, and doubles as natural progress-reporting granularity.
+const BATCH_SIZE = 32;
 
 self.onmessage = async (event: MessageEvent<EmbedRequest>) => {
   const { type, id, texts } = event.data;
@@ -30,8 +38,14 @@ self.onmessage = async (event: MessageEvent<EmbedRequest>) => {
 
   try {
     const extractor = await getExtractor();
-    const output = await extractor(texts, { pooling: 'mean', normalize: true });
-    const embeddings = output.tolist() as number[][];
+    const embeddings: number[][] = [];
+    for (let i = 0; i < texts.length; i += BATCH_SIZE) {
+      const batch = texts.slice(i, i + BATCH_SIZE);
+      const output = await extractor(batch, { pooling: 'mean', normalize: true });
+      embeddings.push(...(output.tolist() as number[][]));
+      const progress: EmbedResponse = { type: 'progress', id, completed: embeddings.length, total: texts.length };
+      (self as unknown as Worker).postMessage(progress);
+    }
     const response: EmbedResponse = { type: 'result', id, embeddings };
     (self as unknown as Worker).postMessage(response);
   } catch (err) {
