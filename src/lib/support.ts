@@ -1,4 +1,4 @@
-export const SUPPORT_EMAIL = 'support@thataibuddy.com';
+export const SUPPORT_EMAIL = 'thataibuddy3@gmail.com';
 
 /**
  * Prefills subject and browser/OS info so bug reports are easier to triage
