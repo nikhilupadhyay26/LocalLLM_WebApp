@@ -62,7 +62,7 @@ export default function LandingPage() {
 
         <div className="mt-12 flex justify-center lg:mt-0 lg:justify-end">
           <img
-            src="/rightimage.png"
+            src="/rightimage.webp"
             alt="PouchLM Interface"
             className="h-auto w-full max-w-[700px] object-contain select-none"
             draggable={false}
