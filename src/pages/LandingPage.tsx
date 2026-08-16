@@ -36,28 +36,42 @@ export default function LandingPage() {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 pb-24 pt-16 text-center">
-        <p className="mono-tag mb-4">100% local · No account required</p>
-        <h1 className="mb-5 text-[2.75rem] font-medium !leading-relaxed tracking-tight text-primary sm:text-5xl">
-          Chat With Your Documents
-          <br />
-          Analyze Paperwork Locally
-          <br />
-          Keep Your Data Secure
-        </h1>
-        <p className="mx-auto mb-8 max-w-xl text-secondary">
-          Chat with and search your invoices, contracts, and customer files. Nothing ever leaves your device.
-          Everything runs locally.
-        </p>
-        <div className="flex items-center justify-center gap-3">
-          <Link to="/app" className="btn-primary !px-6 !py-3">
-            Launch Local Assistant
-          </Link>
-          <a href="#how-it-works" className="btn-secondary !px-6 !py-3">
-            See How it works
-          </a>
+      <main className="mx-auto max-w-7xl px-6 pb-24 pt-16 lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center">
+        <div className="flex flex-col items-center text-center">
+          <p className="mono-tag mb-4 inline-block">100% local · No account required</p>
+          <h1 className="mb-5 text-[2.5rem] font-medium !leading-tight tracking-tight text-primary sm:text-4xl lg:text-5xl">
+            Chat With Your Documents
+            <span className="block">Analyze Paperwork Locally</span>
+            <span className="block">Keep Your Data Secure</span>
+          </h1>
+          <p className="mx-auto mb-8 max-w-xl text-base text-secondary lg:text-lg">
+            Chat with and search your invoices, contracts, and customer files. Nothing ever leaves your device.
+            Everything runs locally.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link to="/app" className="btn-primary !px-6 !py-3 text-[15px]">
+              Launch Local Assistant
+            </Link>
+            <a href="#how-it-works" className="btn-secondary !px-6 !py-3 text-[15px]">
+              See How it works
+            </a>
+          </div>
+          <p className="mt-4 text-xs text-muted">No signup required to start</p>
         </div>
-        <p className="mt-4 text-xs text-muted">No signup required to start</p>
+
+        <div className="mt-12 flex justify-center lg:mt-0 lg:justify-end">
+          <img
+            src="/rightimage.png"
+            alt="PouchLM Interface"
+            className="h-auto w-full max-w-[700px] object-contain select-none"
+            draggable={false}
+            style={{
+              clipPath: 'inset(4% 4% 15% 4%)',
+              WebkitMaskImage: 'radial-gradient(ellipse 95% 95% at 50% 50%, black 80%, transparent 100%)',
+              maskImage: 'radial-gradient(ellipse 95% 95% at 50% 50%, black 80%, transparent 100%)'
+            }}
+          />
+        </div>
       </main>
 
       <section id="how-it-works" className="border-y border-ink-800 bg-ink-900/40 py-16">
