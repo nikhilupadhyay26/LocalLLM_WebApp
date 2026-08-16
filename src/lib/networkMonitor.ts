@@ -1,5 +1,5 @@
 // Wraps window.fetch once, at app boot, to maintain a live, literal count of
-// every network request LocalDesk makes: model asset downloads, anything
+// every network request Hermit makes: model asset downloads, anything
 // else. This is what powers the network indicator badge in the app chrome
 // (PRD Section 13): not a marketing claim, an actual live counter reading
 // real fetch calls.

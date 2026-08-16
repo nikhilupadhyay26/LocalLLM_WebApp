@@ -17,9 +17,9 @@ export default function TopBar() {
 
   return (
     <header className="flex h-14 items-center justify-between border-b border-ink-800 px-4">
-      <Link to="/" className="flex items-center gap-2 text-sm font-medium text-primary">
-        <span className="h-2 w-2 rounded-full bg-signal" aria-hidden="true" />
-        LocalDesk
+      <Link to="/" className="flex items-center gap-2.5 text-base font-semibold text-primary">
+        <img src="/icon.png" alt="" className="h-9 w-9 rounded-md" />
+        Hermit
       </Link>
 
       <div className="flex items-center gap-3">

@@ -22,9 +22,9 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-2 text-sm font-medium text-primary">
-          <span className="h-2 w-2 rounded-full bg-signal" aria-hidden="true" />
-          LocalDesk
+        <div className="flex items-center gap-3 text-xl font-semibold text-primary">
+          <img src="/icon.png" alt="" className="h-11 w-11 rounded-md" />
+          Hermit
         </div>
         <nav className="flex items-center gap-4 text-sm text-secondary">
           <Link to="/privacy" className="hover:text-primary">

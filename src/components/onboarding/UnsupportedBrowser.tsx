@@ -65,7 +65,7 @@ export default function UnsupportedBrowser() {
             <h1 className="mb-3 text-xl font-medium text-primary">Reconnecting to your GPU</h1>
             <p className="text-sm text-secondary">
               {stillAutoRetrying
-                ? "This usually resolves on its own within a few seconds, so LocalDesk is retrying automatically. No need to do anything."
+                ? "This usually resolves on its own within a few seconds, so Hermit is retrying automatically. No need to do anything."
                 : "This is taking longer than usual. Restarting your browser (not just this tab) generally fixes it."}
             </p>
           </>
@@ -88,7 +88,7 @@ export default function UnsupportedBrowser() {
 
         <p className="mt-4 text-xs text-muted">
           Still stuck? Email{' '}
-          <a href={buildSupportMailto('LocalDesk: WebGPU not detected', webgpuFailureReason ?? undefined)} className="underline">
+          <a href={buildSupportMailto('Hermit: WebGPU not detected', webgpuFailureReason ?? undefined)} className="underline">
             {SUPPORT_EMAIL}
           </a>
           . We usually respond within 24 hours.

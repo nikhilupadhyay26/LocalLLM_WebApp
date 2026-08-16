@@ -2,19 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <meta
       name="description"
-      content="LocalDesk: AI that helps with your paperwork without ever seeing your paperwork. Chat with and extract data from your documents entirely on your own device."
+      content="Hermit: AI that helps with your paperwork without ever seeing your paperwork. Chat with your documents entirely on your own device."
     />
-    <title>LocalDesk: AI for your documents, entirely on your device</title>
+    <title>Hermit: AI for your documents, entirely on your device</title>
     <script>
       // Runs before React mounts so the model-loaded flag can't flash. Reads
       // only a local flag; does not itself contact any server.
       try {
-        if (localStorage.getItem('localdesk_theme') === 'light') {
+        if (localStorage.getItem('hermit_theme') === 'light') {
           document.documentElement.classList.add('light');
         }
       } catch {

@@ -41,7 +41,7 @@ export default function FirstRunScreen({ onReady }: { onReady: () => void }) {
           Downloading the {MODEL_LABEL} ({MODEL_SIZE})
         </h1>
         <p className="mb-6 text-sm text-secondary">
-          This happens once. After this, LocalDesk works instantly, even offline. Nothing ever leaves your device.
+          This happens once. After this, Hermit works instantly, even offline. Nothing ever leaves your device.
         </p>
 
         {metered && !starting && (

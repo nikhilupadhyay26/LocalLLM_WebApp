@@ -9,8 +9,8 @@ import { buildGeneralPrompt, buildPrompt, retrieveTopChunks } from '@/lib/rag';
 import { estimateTokens, prepareConversationHistory } from '@/lib/contextBudget';
 import type { ChatMessage, ChatSession, ChunkRecord, DocumentRecord, ModelLoadProgress, WebGPUCapability } from '@/types';
 
-const ACTIVE_CHAT_STORAGE_KEY = 'localdesk_active_chat_id';
-const ONBOARDING_STORAGE_KEY = 'localdesk_onboarding_complete';
+const ACTIVE_CHAT_STORAGE_KEY = 'hermit_active_chat_id';
+const ONBOARDING_STORAGE_KEY = 'hermit_onboarding_complete';
 
 function persistActiveChatId(id: string | null) {
   if (id) localStorage.setItem(ACTIVE_CHAT_STORAGE_KEY, id);

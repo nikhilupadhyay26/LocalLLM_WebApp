@@ -1,7 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { ChatSession, ChunkRecord, DocumentRecord } from '@/types';
 
-interface LocalDeskDB extends DBSchema {
+interface HermitDB extends DBSchema {
   documents: {
     key: string;
     value: DocumentRecord;
@@ -19,14 +19,14 @@ interface LocalDeskDB extends DBSchema {
   };
 }
 
-const DB_NAME = 'localdesk';
+const DB_NAME = 'hermit';
 const DB_VERSION = 1;
 
-let dbPromise: Promise<IDBPDatabase<LocalDeskDB>> | null = null;
+let dbPromise: Promise<IDBPDatabase<HermitDB>> | null = null;
 
-export function getDB(): Promise<IDBPDatabase<LocalDeskDB>> {
+export function getDB(): Promise<IDBPDatabase<HermitDB>> {
   if (!dbPromise) {
-    dbPromise = openDB<LocalDeskDB>(DB_NAME, DB_VERSION, {
+    dbPromise = openDB<HermitDB>(DB_NAME, DB_VERSION, {
       upgrade(db) {
         const documents = db.createObjectStore('documents', { keyPath: 'id' });
         documents.createIndex('by-uploadedAt', 'uploadedAt');
