@@ -1,0 +1,73 @@
+import { useEffect, useState } from 'react';
+import { useAppStore } from '@/store/useAppStore';
+import { useWebGPUCheck } from '@/hooks/useWebGPU';
+import UnsupportedBrowser from '@/components/onboarding/UnsupportedBrowser';
+import FirstRunScreen from '@/components/onboarding/FirstRunScreen';
+import AppShell from '@/components/layout/AppShell';
+import ChatPanel from '@/components/chat/ChatPanel';
+
+export default function AppPage() {
+  const webgpuStatus = useWebGPUCheck();
+  const onboardingComplete = useAppStore((s) => s.onboardingComplete);
+  const completeOnboarding = useAppStore((s) => s.completeOnboarding);
+  const loadDocuments = useAppStore((s) => s.loadDocuments);
+  const loadChatSessions = useAppStore((s) => s.loadChatSessions);
+  const setActiveChat = useAppStore((s) => s.setActiveChat);
+  const ensureModelLoaded = useAppStore((s) => s.ensureModelLoaded);
+
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    void loadDocuments();
+    // Once sessions load, the store may have already restored the last
+    // active session id from localStorage; sync the sidebar's document
+    // selection to match it, or a reload would otherwise silently drop
+    // back to "no documents selected" for a chat that had some.
+    void loadChatSessions().then(() => {
+      const { activeChatId, chatSessions } = useAppStore.getState();
+      const restored = chatSessions.find((c) => c.id === activeChatId);
+      if (restored) setSelectedIds(restored.documentIds);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Return visits (onboarding already done, so FirstRunScreen never mounts)
+  // still need the model loaded from cache automatically (PRD Section 7,
+  // flow 6: "App shell and model load from cache … works offline.").
+  useEffect(() => {
+    if (webgpuStatus === 'available' && onboardingComplete) {
+      void ensureModelLoaded();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [webgpuStatus, onboardingComplete]);
+
+  const toggleDoc = (id: string) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setActiveChat(null);
+  };
+
+  const loadSession = (documentIds: string[]) => {
+    setSelectedIds(documentIds);
+  };
+
+  const startNewChat = () => {
+    setActiveChat(null);
+    setSelectedIds([]);
+  };
+
+  if (webgpuStatus === 'checking') {
+    return <div className="flex min-h-screen items-center justify-center text-muted">Checking your browser…</div>;
+  }
+  if (webgpuStatus === 'unavailable') {
+    return <UnsupportedBrowser />;
+  }
+  if (!onboardingComplete) {
+    return <FirstRunScreen onReady={completeOnboarding} />;
+  }
+
+  return (
+    <AppShell selectedIds={selectedIds} onToggle={toggleDoc} onLoadSession={loadSession} onNewChat={startNewChat}>
+      <ChatPanel selectedDocumentIds={selectedIds} />
+    </AppShell>
+  );
+}
