@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { buildSupportMailto, SUPPORT_EMAIL } from '@/lib/support';
+import { isIOS } from '@/lib/webgpu';
 
 const AUTO_RETRY_INTERVAL_MS = 8000;
 const AUTO_RETRY_MAX_ATTEMPTS = 8; // ~1 minute of hands-free retrying before giving up
@@ -21,6 +22,7 @@ export default function UnsupportedBrowser() {
   // workload) and is usually already respawning on its own.
   const wrongBrowser = webgpuFailureKind === 'no-api';
   const recoverable = !wrongBrowser;
+  const [onIOS] = useState(isIOS);
 
   const retry = async () => {
     setRetrying(true);
@@ -54,10 +56,21 @@ export default function UnsupportedBrowser() {
         <p className="mono-tag mb-3">Browser check</p>
         {wrongBrowser ? (
           <>
-            <h1 className="mb-3 text-xl font-medium text-primary">This browser isn't supported yet</h1>
+            <h1 className="mb-3 text-xl font-medium text-primary">This device isn't supported yet</h1>
             <p className="text-sm text-secondary">
-              Try the latest version of <span className="text-primary">Chrome</span> or{' '}
-              <span className="text-primary">Edge</span> on desktop.
+              {onIOS ? (
+                <>
+                  PouchLM needs a browser feature that Apple only added in{' '}
+                  <span className="text-primary">iOS 26</span>. Every browser on iPhone and iPad uses the
+                  same underlying engine, so switching apps won't help, updating your iOS version will.
+                  In the meantime, PouchLM works on a desktop browser.
+                </>
+              ) : (
+                <>
+                  Try the latest version of <span className="text-primary">Chrome</span> or{' '}
+                  <span className="text-primary">Edge</span> on desktop.
+                </>
+              )}
             </p>
           </>
         ) : (

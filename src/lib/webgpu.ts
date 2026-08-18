@@ -58,6 +58,16 @@ export async function checkWebGPUWithRetries(): Promise<WebGPUCheckResult> {
   return result;
 }
 
+// Every iOS browser (Chrome, Edge, Firefox included) runs on Apple's WebKit
+// engine, not its own, so "switch browsers" is never the fix for a WebGPU
+// gap on this platform, only an iOS update is. iPadOS 13+ reports as a Mac
+// in the user agent, so it's told apart from a real Mac by its touch support.
+export function isIOS(): boolean {
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/.test(ua)) return true;
+  return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+}
+
 export function isMeteredConnection(): boolean {
   const nav = navigator as Navigator & {
     connection?: { saveData?: boolean; type?: string; effectiveType?: string };
