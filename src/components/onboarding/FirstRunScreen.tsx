@@ -3,6 +3,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { isMeteredConnection } from '@/lib/webgpu';
 import { SUPPORT_BLURB } from '@/lib/support';
 import { MODEL_SIZE } from '@/lib/llm';
+import { LITE_MODEL_SIZE } from '@/lib/liteLlm';
 import { getErrorMessage } from '@/lib/errors';
 import ModelDownloadReassurances from '@/components/common/ModelDownloadReassurances';
 import ModelDownloadProgressBar from '@/components/common/ModelDownloadProgressBar';
@@ -11,6 +12,7 @@ export default function FirstRunScreen({ onReady }: { onReady: () => void }) {
   const modelProgress = useAppStore((s) => s.modelProgress);
   const modelReady = useAppStore((s) => s.modelReady);
   const ensureModelLoaded = useAppStore((s) => s.ensureModelLoaded);
+  const lite = useAppStore((s) => s.webgpuStatus) !== 'available';
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [metered] = useState(isMeteredConnection);
@@ -40,8 +42,18 @@ export default function FirstRunScreen({ onReady }: { onReady: () => void }) {
         <p className="mono-tag mb-3">One-time setup</p>
         <h1 className="mb-3 text-xl font-medium text-primary">Setting up your private AI, one-time only</h1>
         <p className="mb-6 text-sm text-secondary">
-          We're downloading a compact AI model straight to your browser ({MODEL_SIZE}). This happens once. After
-          this, everything runs instantly, even offline.
+          {lite ? (
+            <>
+              We're downloading the Lite AI model straight to your browser ({LITE_MODEL_SIZE}). It runs on your
+              device's CPU rather than a GPU, so replies are slower than PouchLM's full model, but this still
+              happens once. After this, everything runs offline.
+            </>
+          ) : (
+            <>
+              We're downloading a compact AI model straight to your browser ({MODEL_SIZE}). This happens once.
+              After this, everything runs instantly, even offline.
+            </>
+          )}
         </p>
 
         <div className="mb-6">

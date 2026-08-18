@@ -1,5 +1,8 @@
-import { completeMessages, type LlmMessage } from './llm';
+import type { LlmMessage } from './llm';
 import type { ChatMessage } from '@/types';
+
+/** Injected rather than imported directly so this stays usable by either the WebGPU or the lite (WASM) engine. */
+type CompleteFn = (messages: LlmMessage[]) => Promise<string>;
 
 // chars/4 is the standard rough heuristic; exact tokenization isn't needed
 // for a budget check, just a number in the right ballpark.
@@ -53,6 +56,7 @@ async function summarizeOlderMessages(
   priorSummary: string | undefined,
   newlyAgedOut: ChatMessage[],
   contextWindowTokens: number,
+  complete: CompleteFn,
 ): Promise<{ summary: string; coveredCount: number }> {
   const summaryTokens = priorSummary ? estimateTokens(priorSummary) : 0;
   const budget = Math.max(
@@ -64,7 +68,7 @@ async function summarizeOlderMessages(
   const input = priorSummary
     ? `Previous summary of even earlier messages:\n${priorSummary}\n\nNewer messages to fold in:\n${transcriptOf(bounded)}`
     : transcriptOf(bounded);
-  const summary = await completeMessages([
+  const summary = await complete([
     { role: 'system', content: SUMMARY_SYSTEM_PROMPT },
     { role: 'user', content: input },
   ]);
@@ -95,6 +99,7 @@ export async function prepareConversationHistory(
   contextWindowTokens: number,
   systemPromptTokens: number,
   userTurnTokens: number,
+  complete: CompleteFn,
   /** Called right before the (rare) extra model call to (re)summarize, so callers can show an accurate status instead of guessing in advance. */
   onSummarizing?: () => void,
 ): Promise<PreparedHistory> {
@@ -142,6 +147,7 @@ export async function prepareConversationHistory(
     existingSummary,
     newlyAgedOut,
     contextWindowTokens,
+    complete,
   );
   const historyMessages: LlmMessage[] = [
     { role: 'system', content: `Summary of earlier conversation: ${newSummary}` },

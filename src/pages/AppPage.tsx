@@ -8,6 +8,7 @@ import ChatPanel from '@/components/chat/ChatPanel';
 
 export default function AppPage() {
   const webgpuStatus = useWebGPUCheck();
+  const liteModeAccepted = useAppStore((s) => s.liteModeAccepted);
   const onboardingComplete = useAppStore((s) => s.onboardingComplete);
   const completeOnboarding = useAppStore((s) => s.completeOnboarding);
   const loadDocuments = useAppStore((s) => s.loadDocuments);
@@ -36,11 +37,12 @@ export default function AppPage() {
   // still need the model loaded from cache automatically (PRD Section 7,
   // flow 6: "App shell and model load from cache … works offline.").
   useEffect(() => {
-    if (webgpuStatus === 'available' && onboardingComplete) {
+    const canLoadModel = webgpuStatus === 'available' || (webgpuStatus === 'unavailable' && liteModeAccepted);
+    if (canLoadModel && onboardingComplete) {
       void ensureModelLoaded();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [webgpuStatus, onboardingComplete]);
+  }, [webgpuStatus, liteModeAccepted, onboardingComplete]);
 
   const toggleDoc = (id: string) => {
     setSelectedIds((prev) => {
@@ -66,7 +68,7 @@ export default function AppPage() {
   if (webgpuStatus === 'checking') {
     return <div className="flex min-h-screen items-center justify-center text-muted">Checking your browser…</div>;
   }
-  if (webgpuStatus === 'unavailable') {
+  if (webgpuStatus === 'unavailable' && !liteModeAccepted) {
     return <UnsupportedBrowser />;
   }
   if (!onboardingComplete) {

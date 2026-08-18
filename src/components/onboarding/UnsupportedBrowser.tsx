@@ -11,6 +11,7 @@ export default function UnsupportedBrowser() {
   const webgpuFailureKind = useAppStore((s) => s.webgpuFailureKind);
   const webgpuFailureReason = useAppStore((s) => s.webgpuFailureReason);
   const checkWebGpuSupport = useAppStore((s) => s.checkWebGpuSupport);
+  const acceptLiteMode = useAppStore((s) => s.acceptLiteMode);
   const [retrying, setRetrying] = useState(false);
   const [autoAttempts, setAutoAttempts] = useState(0);
   const autoAttemptsRef = useRef(0);
@@ -56,22 +57,29 @@ export default function UnsupportedBrowser() {
         <p className="mono-tag mb-3">Browser check</p>
         {wrongBrowser ? (
           <>
-            <h1 className="mb-3 text-xl font-medium text-primary">This device isn't supported yet</h1>
+            <h1 className="mb-3 text-xl font-medium text-primary">The fast engine isn't available on this device</h1>
             <p className="text-sm text-secondary">
               {onIOS ? (
                 <>
-                  PouchLM needs a browser feature that Apple only added in{' '}
-                  <span className="text-primary">iOS 26</span>. Every browser on iPhone and iPad uses the
-                  same underlying engine, so switching apps won't help, updating your iOS version will.
-                  In the meantime, PouchLM works on a desktop browser.
+                  PouchLM's full-speed AI needs a browser feature Apple only added in{' '}
+                  <span className="text-primary">iOS 26</span>. Every browser on iPhone and iPad uses the same
+                  underlying engine, so switching apps won't help, updating your iOS version will.
                 </>
               ) : (
                 <>
-                  Try the latest version of <span className="text-primary">Chrome</span> or{' '}
-                  <span className="text-primary">Edge</span> on desktop.
+                  It needs a browser feature (WebGPU) this browser doesn't have. The latest{' '}
+                  <span className="text-primary">Chrome</span> or <span className="text-primary">Edge</span> on
+                  desktop supports it.
                 </>
               )}
             </p>
+            <p className="mt-3 text-sm text-secondary">
+              In the meantime, PouchLM can run a smaller model directly on this device instead, no GPU needed.
+              It's a real tradeoff: a less capable model and noticeably slower replies, still entirely on-device.
+            </p>
+            <button type="button" onClick={acceptLiteMode} className="btn-primary mt-4 w-full">
+              Continue in Lite mode
+            </button>
           </>
         ) : (
           <>
@@ -84,15 +92,23 @@ export default function UnsupportedBrowser() {
           </>
         )}
 
-        <button type="button" onClick={() => void retry()} disabled={retrying} className="btn-secondary mt-4">
-          {retrying ? 'Checking…' : 'Try again now'}
-        </button>
+        {!wrongBrowser && (
+          <button type="button" onClick={() => void retry()} disabled={retrying} className="btn-secondary mt-4">
+            {retrying ? 'Checking…' : 'Try again now'}
+          </button>
+        )}
 
         {stillAutoRetrying && (
           <p className="mt-2 flex items-center justify-center gap-1.5 text-xs text-muted">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-signal" aria-hidden="true" />
             Checking automatically every few seconds…
           </p>
+        )}
+
+        {!wrongBrowser && !stillAutoRetrying && (
+          <button type="button" onClick={acceptLiteMode} className="mt-3 text-xs text-secondary underline">
+            Continue in Lite mode instead
+          </button>
         )}
 
         {webgpuFailureReason && (

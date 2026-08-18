@@ -3,7 +3,14 @@ import * as db from '@/lib/db';
 import { chunkText } from '@/lib/chunk';
 import { embedTexts } from '@/lib/embeddings';
 import { parseFile, validateFile, FileTooLargeError, UnsupportedFileError } from '@/lib/parsers';
-import { DEFAULT_MODEL_ID, getContextWindowSize, getLoadedModelId, hasLoadedEngine, loadModel, streamChatCompletion } from '@/lib/llm';
+import { DEFAULT_MODEL_ID, getContextWindowSize, getLoadedModelId, hasLoadedEngine, loadModel, streamChatCompletion, completeMessages } from '@/lib/llm';
+import {
+  completeLiteMessages,
+  getLiteContextWindowSize,
+  isLiteModelReady,
+  loadLiteModel,
+  streamLiteChatCompletion,
+} from '@/lib/liteLlm';
 import { checkWebGPUWithRetries, type WebGPUCheckResult } from '@/lib/webgpu';
 import { buildGeneralPrompt, buildPrompt, retrieveTopChunks } from '@/lib/rag';
 import { estimateTokens, prepareConversationHistory } from '@/lib/contextBudget';
@@ -13,6 +20,7 @@ import type { ChatMessage, ChatSession, ChunkRecord, DocumentRecord, ModelLoadPr
 const ACTIVE_CHAT_STORAGE_KEY = 'pouchlm_active_chat_id';
 const ONBOARDING_STORAGE_KEY = 'pouchlm_onboarding_complete';
 const MODEL_ID_STORAGE_KEY = 'pouchlm_model_id';
+const LITE_MODE_STORAGE_KEY = 'pouchlm_lite_mode_accepted';
 
 function persistActiveChatId(id: string | null) {
   if (id) localStorage.setItem(ACTIVE_CHAT_STORAGE_KEY, id);
@@ -25,6 +33,10 @@ function getStoredModelId(): string {
 
 function isOnboardingComplete(): boolean {
   return localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true';
+}
+
+function isLiteModeAccepted(): boolean {
+  return localStorage.getItem(LITE_MODE_STORAGE_KEY) === 'true';
 }
 
 function autoTitle(firstUserMessage: string): string {
@@ -58,6 +70,12 @@ interface AppState {
   webgpuFailureReason: string | null;
   webgpuFailureKind: WebGPUCheckResult['kind'] | null;
   checkWebGpuSupport: () => Promise<void>;
+  // Devices with no WebGPU at all (webgpuFailureKind === 'no-api') can still
+  // run a much smaller model on CPU/WASM instead of being a dead end. This
+  // is only ever true once the user has explicitly opted into that
+  // tradeoff (smaller model, slower generation) from the onboarding screen.
+  liteModeAccepted: boolean;
+  acceptLiteMode: () => void;
   modelProgress: ModelLoadProgress | null;
   modelReady: boolean;
   ensureModelLoaded: () => Promise<void>;
@@ -280,6 +298,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     try {
       await get().ensureModelLoaded();
+      const lite = get().webgpuStatus !== 'available';
+      const stream = lite ? streamLiteChatCompletion : streamChatCompletion;
+      const complete = lite ? completeLiteMessages : completeMessages;
 
       // No document in scope: skip retrieval entirely and answer as a
       // general assistant rather than forcing the context-constrained RAG
@@ -292,17 +313,17 @@ export const useAppStore = create<AppState>((set, get) => ({
         replaceLastAssistant({ status: 'retrieving' });
         const retrieved = await retrieveTopChunks(content, session.documentIds);
         citedChunkIds = retrieved.map((c) => c.id);
-        const prompt = buildPrompt(retrieved, content);
+        const prompt = buildPrompt(retrieved, content, lite);
         system = prompt.system;
         userTurn = prompt.user;
       } else {
-        const prompt = buildGeneralPrompt(content);
+        const prompt = buildGeneralPrompt(content, lite);
         system = prompt.system;
         userTurn = prompt.user;
       }
 
       const priorMessages = session.messages; // excludes the user turn/placeholder just added
-      const contextWindow = getContextWindowSize(state.modelId);
+      const contextWindow = lite ? getLiteContextWindowSize() : getContextWindowSize(state.modelId);
       const prepared = await prepareConversationHistory(
         priorMessages,
         session.contextSummary,
@@ -310,6 +331,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         contextWindow,
         estimateTokens(system),
         estimateTokens(userTurn),
+        complete,
         () => replaceLastAssistant({ status: 'summarizing' }),
       );
 
@@ -336,7 +358,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         { role: 'user' as const, content: userTurn },
       ];
 
-      await streamChatCompletion(messages, {
+      await stream(messages, {
         onToken: (fullTextSoFar) => {
           replaceLastAssistant({ content: fullTextSoFar, citedChunkIds, status: undefined });
         },
@@ -373,10 +395,27 @@ export const useAppStore = create<AppState>((set, get) => ({
       webgpuFailureKind: result.kind,
     });
   },
+  liteModeAccepted: isLiteModeAccepted(),
+  acceptLiteMode() {
+    localStorage.setItem(LITE_MODE_STORAGE_KEY, 'true');
+    set({ liteModeAccepted: true });
+  },
   modelProgress: null,
   modelReady: false,
   async ensureModelLoaded() {
-    const { modelId } = get();
+    const { modelId, webgpuStatus } = get();
+
+    // No WebGPU on this device: run the small CPU/WASM model instead of the
+    // full catalog. Only reachable once liteModeAccepted is true (AppPage
+    // gates on that), so this is always an informed choice, never a silent
+    // downgrade.
+    if (webgpuStatus !== 'available') {
+      if (get().modelReady && isLiteModelReady()) return;
+      await loadLiteModel((progress) => set({ modelProgress: progress }));
+      set({ modelReady: true, modelProgress: null });
+      return;
+    }
+
     // Also check the engine itself and which model it's actually running,
     // not just the flag: a GPU hiccup can silently drop the underlying
     // engine (llm.ts recovers automatically when it can, but if that
@@ -385,7 +424,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     // model answers the next message.
     if (get().modelReady && hasLoadedEngine() && getLoadedModelId() === modelId) return;
     await loadModel(modelId, (progress) => set({ modelProgress: progress }));
-    set({ modelReady: true });
+    set({ modelReady: true, modelProgress: null });
   },
   modelId: getStoredModelId(),
   modelSwitchError: null,

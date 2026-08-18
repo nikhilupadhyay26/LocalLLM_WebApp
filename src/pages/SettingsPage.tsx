@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { clearAllLocalData, estimateStorageUsage } from '@/lib/db';
 import { useAppStore } from '@/store/useAppStore';
 import { DEFAULT_MODEL_ID, MODEL_LABEL, MODEL_SIZE, getModelDisplayName } from '@/lib/llm';
+import { LITE_MODEL_LABEL, LITE_MODEL_SIZE } from '@/lib/liteLlm';
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -12,6 +13,7 @@ function formatBytes(bytes: number): string {
 
 export default function SettingsPage() {
   const modelId = useAppStore((s) => s.modelId);
+  const lite = useAppStore((s) => s.webgpuStatus) !== 'available';
   const [usage, setUsage] = useState<{ usageBytes: number; quotaBytes: number } | null>(null);
   const [confirmingClear, setConfirmingClear] = useState(false);
   const [cleared, setCleared] = useState(false);
@@ -36,17 +38,24 @@ export default function SettingsPage() {
       <section className="card mb-6 p-5">
         <h2 className="mb-2 text-sm font-medium text-primary">Model</h2>
         <p className="text-sm text-secondary">
-          {modelId === DEFAULT_MODEL_ID ? (
+          {lite ? (
             <>
-              PouchLM runs the {MODEL_LABEL} ({MODEL_SIZE}) entirely on your device.
+              PouchLM is running the {LITE_MODEL_LABEL} ({LITE_MODEL_SIZE}) entirely on your device. This browser
+              doesn't support the faster GPU-based engine, so PouchLM automatically switched to a smaller model
+              that runs on your CPU instead, replies are slower than the full model, but nothing changes about
+              privacy: it still never leaves your device.
+            </>
+          ) : modelId === DEFAULT_MODEL_ID ? (
+            <>
+              PouchLM runs the {MODEL_LABEL} ({MODEL_SIZE}) entirely on your device. You can pick a different
+              model from the menu above the chat box.
             </>
           ) : (
             <>
               PouchLM is currently running <span className="text-primary">{getModelDisplayName(modelId)}</span>{' '}
-              entirely on your device.
+              entirely on your device. You can pick a different model from the menu above the chat box.
             </>
-          )}{' '}
-          You can pick a different model from the menu above the chat box.
+          )}
         </p>
       </section>
 

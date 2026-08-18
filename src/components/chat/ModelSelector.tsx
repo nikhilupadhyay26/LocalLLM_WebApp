@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { DEFAULT_MODEL_ID, MODEL_LABEL, getModelCatalog, getModelDisplayName, isModelCached } from '@/lib/llm';
+import { LITE_MODEL_LABEL } from '@/lib/liteLlm';
 import Modal from '@/components/common/Modal';
 import ModelDownloadReassurances from '@/components/common/ModelDownloadReassurances';
 import ModelDownloadProgressBar from '@/components/common/ModelDownloadProgressBar';
@@ -18,6 +19,7 @@ export default function ModelSelector() {
   const modelProgress = useAppStore((s) => s.modelProgress);
   const modelSwitchError = useAppStore((s) => s.modelSwitchError);
   const dismissModelSwitchError = useAppStore((s) => s.dismissModelSwitchError);
+  const lite = useAppStore((s) => s.webgpuStatus) !== 'available';
 
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
@@ -59,6 +61,16 @@ export default function ModelSelector() {
     await setModelId(id);
     setSwitching(false);
   };
+
+  // Lite mode has exactly one model, no catalog to pick from, so the picker
+  // becomes a plain status tag instead of a dropdown.
+  if (lite) {
+    return (
+      <div className="px-3 pt-2">
+        <span className="mono-tag text-secondary">{LITE_MODEL_LABEL}</span>
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} className="relative px-3 pt-2">
