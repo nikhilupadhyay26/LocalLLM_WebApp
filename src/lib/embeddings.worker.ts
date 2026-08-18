@@ -1,5 +1,6 @@
 /// <reference lib="webworker" />
 import { pipeline } from '@huggingface/transformers';
+import { getErrorMessage } from './errors';
 
 const MODEL_ID = 'Xenova/all-MiniLM-L6-v2';
 
@@ -52,7 +53,7 @@ self.onmessage = async (event: MessageEvent<EmbedRequest>) => {
     const response: EmbedResponse = {
       type: 'error',
       id,
-      message: err instanceof Error ? err.message : 'Embedding failed',
+      message: getErrorMessage(err, 'Embedding failed'),
     };
     (self as unknown as Worker).postMessage(response);
   }

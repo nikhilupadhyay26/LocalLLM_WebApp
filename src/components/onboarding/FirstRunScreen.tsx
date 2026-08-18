@@ -3,12 +3,9 @@ import { useAppStore } from '@/store/useAppStore';
 import { isMeteredConnection } from '@/lib/webgpu';
 import { SUPPORT_BLURB } from '@/lib/support';
 import { MODEL_SIZE } from '@/lib/llm';
-
-const REASSURANCES = [
-  { icon: '🔒', text: 'Stays on your device, nothing you upload is ever sent anywhere.' },
-  { icon: '⚡', text: 'One-time only, instant on every visit after this.' },
-  { icon: '📶', text: "Best on Wi-Fi, it's a one-time download, worth doing on a strong connection." },
-];
+import { getErrorMessage } from '@/lib/errors';
+import ModelDownloadReassurances from '@/components/common/ModelDownloadReassurances';
+import ModelDownloadProgressBar from '@/components/common/ModelDownloadProgressBar';
 
 export default function FirstRunScreen({ onReady }: { onReady: () => void }) {
   const modelProgress = useAppStore((s) => s.modelProgress);
@@ -32,12 +29,10 @@ export default function FirstRunScreen({ onReady }: { onReady: () => void }) {
     try {
       await ensureModelLoaded();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load the model.');
+      setError(getErrorMessage(err, 'Could not load the model.'));
       setStarting(false);
     }
   };
-
-  const pct = modelProgress ? Math.round(modelProgress.progress * 100) : 0;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
@@ -49,18 +44,8 @@ export default function FirstRunScreen({ onReady }: { onReady: () => void }) {
           this, everything runs instantly, even offline.
         </p>
 
-        {/* Stays visible through the whole download, not just before it starts:
-            someone watching a multi-minute progress bar needs something to
-            read, or an unexplained gigabyte download reads as suspicious. */}
-        <div className="mb-6 grid gap-2 sm:grid-cols-3">
-          {REASSURANCES.map((item) => (
-            <div key={item.text} className="rounded-md border border-ink-700 bg-ink-900 p-3 text-left">
-              <span className="mb-1 block text-lg" aria-hidden="true">
-                {item.icon}
-              </span>
-              <p className="text-xs text-secondary">{item.text}</p>
-            </div>
-          ))}
+        <div className="mb-6">
+          <ModelDownloadReassurances />
         </div>
 
         {metered && !starting && (
@@ -75,20 +60,7 @@ export default function FirstRunScreen({ onReady }: { onReady: () => void }) {
           </button>
         )}
 
-        {starting && (
-          <div className="text-left">
-            <div className="mb-2 h-2 w-full overflow-hidden rounded-full bg-ink-800">
-              <div
-                className="h-full rounded-full bg-signal transition-[width] duration-300"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <div className="flex items-center justify-between font-mono text-xs text-muted">
-              <span>{modelProgress ? 'Downloading…' : 'Preparing…'}</span>
-              <span>{pct}%</span>
-            </div>
-          </div>
-        )}
+        {starting && <ModelDownloadProgressBar progress={modelProgress} />}
 
         {error && (
           <div className="mt-4 rounded-md border border-red-800/40 bg-red-950/30 px-3 py-2">

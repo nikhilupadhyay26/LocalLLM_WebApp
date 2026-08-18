@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import MessageBubble from './MessageBubble';
 import Composer from './Composer';
+import ModelSelector from './ModelSelector';
 
 interface ChatPanelProps {
   selectedDocumentIds: string[];
@@ -55,6 +56,7 @@ export default function ChatPanel({ selectedDocumentIds }: ChatPanelProps) {
         )}
         {session?.messages.map((m, i) => <MessageBubble key={i} message={m} />)}
       </div>
+      <ModelSelector />
       <Composer
         onSend={(text) => void handleSend(text)}
         disabled={isGenerating}

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { clearAllLocalData, estimateStorageUsage } from '@/lib/db';
-import { MODEL_LABEL, MODEL_SIZE } from '@/lib/llm';
+import { useAppStore } from '@/store/useAppStore';
+import { DEFAULT_MODEL_ID, MODEL_LABEL, MODEL_SIZE, getModelDisplayName } from '@/lib/llm';
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -10,6 +11,7 @@ function formatBytes(bytes: number): string {
 }
 
 export default function SettingsPage() {
+  const modelId = useAppStore((s) => s.modelId);
   const [usage, setUsage] = useState<{ usageBytes: number; quotaBytes: number } | null>(null);
   const [confirmingClear, setConfirmingClear] = useState(false);
   const [cleared, setCleared] = useState(false);
@@ -34,7 +36,17 @@ export default function SettingsPage() {
       <section className="card mb-6 p-5">
         <h2 className="mb-2 text-sm font-medium text-primary">Model</h2>
         <p className="text-sm text-secondary">
-          PouchLM runs the {MODEL_LABEL} ({MODEL_SIZE}) entirely on your device.
+          {modelId === DEFAULT_MODEL_ID ? (
+            <>
+              PouchLM runs the {MODEL_LABEL} ({MODEL_SIZE}) entirely on your device.
+            </>
+          ) : (
+            <>
+              PouchLM is currently running <span className="text-primary">{getModelDisplayName(modelId)}</span>{' '}
+              entirely on your device.
+            </>
+          )}{' '}
+          You can pick a different model from the menu above the chat box.
         </p>
       </section>
 

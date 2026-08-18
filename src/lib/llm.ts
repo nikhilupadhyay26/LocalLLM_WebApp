@@ -1,26 +1,128 @@
-import { CreateWebWorkerMLCEngine, prebuiltAppConfig, type InitProgressReport, type MLCEngineInterface } from '@mlc-ai/web-llm';
+import {
+  CreateWebWorkerMLCEngine,
+  hasModelInCache,
+  prebuiltAppConfig,
+  type InitProgressReport,
+  type MLCEngineInterface,
+} from '@mlc-ai/web-llm';
 import type { ModelLoadProgress } from '@/types';
 
-// Launch ships with one model: small enough to load quickly and run
-// comfortably on modest hardware. More tiers can come back later without
-// touching anything downstream of this file.
-export const MODEL_ID = 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC';
+// The model everyone starts on: small enough to load quickly and run
+// comfortably on modest hardware. Anyone can switch to a different one from
+// the model picker; this is only the first-ever default.
+export const DEFAULT_MODEL_ID = 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC';
 export const MODEL_LABEL = 'AI model';
 export const MODEL_SIZE = '~1GB';
+
+// WebLLM's full catalog (160+ entries) includes models far too large to run
+// reliably on typical hardware. Anything above this VRAM footprint is
+// excluded from the picker entirely, never just discouraged.
+const VRAM_LIMIT_MB = 4096;
+
+// When a base model ships multiple quantizations, prefer whichever appears
+// first here (matches the balance the shipped default already uses), and
+// only fall back to a less-preferred one if that base model doesn't offer it.
+const QUANT_PREFERENCE = ['q4f16_1', 'q4f32_1', 'q0f16', 'q0f32'];
+
+export interface ModelCatalogEntry {
+  id: string;
+  displayName: string;
+  vramRequiredMB: number;
+  sizeLabel: string;
+}
+
+function baseNameOf(modelId: string): string {
+  const match = modelId.match(/^(.*?)-q\d/);
+  return match ? match[1] : modelId;
+}
+
+function quantScoreOf(modelId: string): number {
+  const idx = QUANT_PREFERENCE.findIndex((q) => modelId.includes(`-${q}`));
+  return idx === -1 ? QUANT_PREFERENCE.length : idx;
+}
+
+function formatSize(vramMB: number): string {
+  return vramMB >= 1024 ? `~${(vramMB / 1024).toFixed(1)}GB` : `~${Math.round(vramMB)}MB`;
+}
+
+let cachedCatalog: ModelCatalogEntry[] | null = null;
+
+/**
+ * WebLLM's raw model_list is mostly quantization variants of a much smaller
+ * set of actual base models (e.g. three separate entries for
+ * "Phi-3.5-mini-instruct" alone), so showing it unfiltered reads as "pick a
+ * quantization scheme," not "pick a model." Filters by VRAM footprint, then
+ * keeps only the single best-quantization, full-context-window variant per
+ * base model. Approximate download size is derived from vram_required_MB;
+ * WebLLM's config doesn't expose an exact download byte count.
+ */
+export function getModelCatalog(): ModelCatalogEntry[] {
+  if (cachedCatalog) return cachedCatalog;
+
+  const bestPerBase = new Map<string, (typeof prebuiltAppConfig.model_list)[number]>();
+  for (const record of prebuiltAppConfig.model_list) {
+    const vram = record.vram_required_MB ?? 0;
+    if (vram <= 0 || vram > VRAM_LIMIT_MB) continue;
+    // Sentence-embedding models (e.g. the snowflake-arctic-embed family)
+    // ship in the same catalog but aren't chat models at all; offering them
+    // here would let someone pick one and get garbage or an outright
+    // failure back from a chat completion call.
+    if (/embed/i.test(record.model_id)) continue;
+
+    const base = baseNameOf(record.model_id);
+    const existing = bestPerBase.get(base);
+    if (!existing) {
+      bestPerBase.set(base, record);
+      continue;
+    }
+    // A "-1k"-style suffix means a shortened context window traded for
+    // lower memory; prefer the full-context variant when both exist.
+    const existingShortened = /-\d+k$/i.test(existing.model_id);
+    const candidateShortened = /-\d+k$/i.test(record.model_id);
+    if (existingShortened && !candidateShortened) {
+      bestPerBase.set(base, record);
+    } else if (existingShortened === candidateShortened && quantScoreOf(record.model_id) < quantScoreOf(existing.model_id)) {
+      bestPerBase.set(base, record);
+    }
+  }
+
+  cachedCatalog = Array.from(bestPerBase.values())
+    .map((record) => {
+      const vramRequiredMB = Math.round(record.vram_required_MB ?? 0);
+      return {
+        id: record.model_id,
+        displayName: baseNameOf(record.model_id).replace(/-/g, ' '),
+        vramRequiredMB,
+        sizeLabel: formatSize(vramRequiredMB),
+      };
+    })
+    .sort((a, b) => a.vramRequiredMB - b.vramRequiredMB);
+  return cachedCatalog;
+}
+
+export function getModelDisplayName(modelId: string): string {
+  if (modelId === DEFAULT_MODEL_ID) return MODEL_LABEL;
+  return getModelCatalog().find((m) => m.id === modelId)?.displayName ?? baseNameOf(modelId).replace(/-/g, ' ');
+}
+
+export function isModelCached(modelId: string): Promise<boolean> {
+  return hasModelInCache(modelId);
+}
+
+const FALLBACK_CONTEXT_WINDOW = 4096;
 
 // WebLLM's prebuilt model list often caps context_window_size well below
 // what the underlying model natively supports (browser memory/KV-cache
 // constraints). Read the real, currently-active number from WebLLM's own
 // shipped config for this exact model id, never hardcode an assumed limit:
 // if the library's prebuilt list changes, this adapts automatically.
-const FALLBACK_CONTEXT_WINDOW = 4096;
-
-export function getContextWindowSize(): number {
-  const record = prebuiltAppConfig.model_list.find((m) => m.model_id === MODEL_ID);
+export function getContextWindowSize(modelId: string): number {
+  const record = prebuiltAppConfig.model_list.find((m) => m.model_id === modelId);
   return record?.overrides?.context_window_size ?? FALLBACK_CONTEXT_WINDOW;
 }
 
 let engine: MLCEngineInterface | null = null;
+let loadedModelId: string | null = null;
 let worker: Worker | null = null;
 
 function getWorker(): Worker {
@@ -30,15 +132,31 @@ function getWorker(): Worker {
   return worker;
 }
 
-export async function loadModel(onProgress: (p: ModelLoadProgress) => void): Promise<MLCEngineInterface> {
-  if (engine) return engine;
+export async function loadModel(
+  modelId: string,
+  onProgress: (p: ModelLoadProgress) => void,
+): Promise<MLCEngineInterface> {
+  if (engine && loadedModelId === modelId) return engine;
 
-  engine = await CreateWebWorkerMLCEngine(getWorker(), MODEL_ID, {
+  // Switching to a different model: drop the old engine first rather than
+  // letting two models' worth of weights sit in memory at once.
+  if (engine && loadedModelId !== modelId) {
+    await engine.unload();
+    engine = null;
+    loadedModelId = null;
+  }
+
+  engine = await CreateWebWorkerMLCEngine(getWorker(), modelId, {
     initProgressCallback: (report: InitProgressReport) => {
       onProgress({ progress: report.progress, text: report.text, timeElapsedSeconds: report.timeElapsed });
     },
   });
+  loadedModelId = modelId;
   return engine;
+}
+
+export function getLoadedModelId(): string | null {
+  return loadedModelId;
 }
 
 export function getLoadedEngine(): MLCEngineInterface | null {
@@ -59,11 +177,14 @@ function looksLikeDeviceLoss(err: unknown): boolean {
   return /device|adapter|webgpu|gpu process|lost connection|context.*(lost|destroyed)/.test(message);
 }
 
-/** Drops the current engine and reloads it fresh. Weights are cache-backed, so this is quick, not a full re-download. Returns false if there's nothing to recover from. */
+/** Drops the current engine and reloads the same model fresh. Weights are cache-backed, so this is quick, not a full re-download. Returns false if there's nothing to recover from. */
 async function recoverEngine(): Promise<boolean> {
+  const modelId = loadedModelId;
+  if (!modelId) return false;
   engine = null;
+  loadedModelId = null;
   try {
-    await loadModel(() => {});
+    await loadModel(modelId, () => {});
     return true;
   } catch {
     return false;

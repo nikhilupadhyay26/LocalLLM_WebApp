@@ -3,18 +3,24 @@ import * as db from '@/lib/db';
 import { chunkText } from '@/lib/chunk';
 import { embedTexts } from '@/lib/embeddings';
 import { parseFile, validateFile, FileTooLargeError, UnsupportedFileError } from '@/lib/parsers';
-import { getContextWindowSize, hasLoadedEngine, loadModel, streamChatCompletion } from '@/lib/llm';
+import { DEFAULT_MODEL_ID, getContextWindowSize, getLoadedModelId, hasLoadedEngine, loadModel, streamChatCompletion } from '@/lib/llm';
 import { checkWebGPUWithRetries, type WebGPUCheckResult } from '@/lib/webgpu';
 import { buildGeneralPrompt, buildPrompt, retrieveTopChunks } from '@/lib/rag';
 import { estimateTokens, prepareConversationHistory } from '@/lib/contextBudget';
+import { getErrorMessage } from '@/lib/errors';
 import type { ChatMessage, ChatSession, ChunkRecord, DocumentRecord, ModelLoadProgress, WebGPUCapability } from '@/types';
 
 const ACTIVE_CHAT_STORAGE_KEY = 'pouchlm_active_chat_id';
 const ONBOARDING_STORAGE_KEY = 'pouchlm_onboarding_complete';
+const MODEL_ID_STORAGE_KEY = 'pouchlm_model_id';
 
 function persistActiveChatId(id: string | null) {
   if (id) localStorage.setItem(ACTIVE_CHAT_STORAGE_KEY, id);
   else localStorage.removeItem(ACTIVE_CHAT_STORAGE_KEY);
+}
+
+function getStoredModelId(): string {
+  return localStorage.getItem(MODEL_ID_STORAGE_KEY) ?? DEFAULT_MODEL_ID;
 }
 
 function isOnboardingComplete(): boolean {
@@ -55,6 +61,10 @@ interface AppState {
   modelProgress: ModelLoadProgress | null;
   modelReady: boolean;
   ensureModelLoaded: () => Promise<void>;
+  modelId: string;
+  setModelId: (id: string) => Promise<void>;
+  modelSwitchError: string | null;
+  dismissModelSwitchError: () => void;
   onboardingComplete: boolean;
   completeOnboarding: () => void;
 }
@@ -156,7 +166,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       const failed: DocumentRecord = {
         ...record,
         status: 'error',
-        errorMessage: err instanceof Error ? err.message : 'Something went wrong while processing this file.',
+        errorMessage: getErrorMessage(err, 'Something went wrong while processing this file.'),
       };
       await db.putDocument(failed);
       set((s) => ({ documents: s.documents.map((d) => (d.id === id ? failed : d)) }));
@@ -292,7 +302,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
 
       const priorMessages = session.messages; // excludes the user turn/placeholder just added
-      const contextWindow = getContextWindowSize();
+      const contextWindow = getContextWindowSize(state.modelId);
       const prepared = await prepareConversationHistory(
         priorMessages,
         session.contextSummary,
@@ -344,7 +354,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       });
     } catch (err) {
       replaceLastAssistant({
-        content: `Something went wrong: ${err instanceof Error ? err.message : 'unknown error'}`,
+        content: `Something went wrong: ${getErrorMessage(err, 'unknown error')}`,
         status: undefined,
       });
       await finish();
@@ -366,13 +376,42 @@ export const useAppStore = create<AppState>((set, get) => ({
   modelProgress: null,
   modelReady: false,
   async ensureModelLoaded() {
-    // Also check the engine itself, not just the flag: a GPU hiccup can
-    // silently drop the underlying engine (llm.ts recovers automatically
-    // when it can, but if that recovery ever fails, modelReady would
-    // otherwise stay stuck true forever with nothing left to generate from).
-    if (get().modelReady && hasLoadedEngine()) return;
-    await loadModel((progress) => set({ modelProgress: progress }));
+    const { modelId } = get();
+    // Also check the engine itself and which model it's actually running,
+    // not just the flag: a GPU hiccup can silently drop the underlying
+    // engine (llm.ts recovers automatically when it can, but if that
+    // recovery ever fails, modelReady would otherwise stay stuck true
+    // forever), and a stale mismatch here would otherwise mean the wrong
+    // model answers the next message.
+    if (get().modelReady && hasLoadedEngine() && getLoadedModelId() === modelId) return;
+    await loadModel(modelId, (progress) => set({ modelProgress: progress }));
     set({ modelReady: true });
+  },
+  modelId: getStoredModelId(),
+  modelSwitchError: null,
+  dismissModelSwitchError() {
+    set({ modelSwitchError: null });
+  },
+  async setModelId(newModelId) {
+    const previousModelId = get().modelId;
+    if (newModelId === previousModelId && hasLoadedEngine() && getLoadedModelId() === newModelId) return;
+
+    set({ modelSwitchError: null, modelProgress: null, modelReady: false });
+    try {
+      await loadModel(newModelId, (progress) => set({ modelProgress: progress }));
+      localStorage.setItem(MODEL_ID_STORAGE_KEY, newModelId);
+      set({ modelId: newModelId, modelReady: true, modelProgress: null });
+    } catch (err) {
+      const message = getErrorMessage(err, 'Could not load this model.');
+      // Never leave the user on a broken engine with no usable model at
+      // all: fall back to whatever was actually working before this switch.
+      try {
+        await loadModel(previousModelId, (progress) => set({ modelProgress: progress }));
+        set({ modelId: previousModelId, modelReady: true, modelProgress: null, modelSwitchError: message });
+      } catch {
+        set({ modelSwitchError: message, modelProgress: null });
+      }
+    }
   },
   onboardingComplete: isOnboardingComplete(),
   completeOnboarding() {
