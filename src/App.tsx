@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import LandingPage from '@/pages/LandingPage';
+import BusinessLandingPage from '@/pages/BusinessLandingPage';
+import StudentLandingPage from '@/pages/StudentLandingPage';
 import PrivacyPage from '@/pages/PrivacyPage';
 import HelpModal from '@/components/common/HelpModal';
 
@@ -20,6 +22,8 @@ export default function App() {
     <>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/business" element={<BusinessLandingPage />} />
+        <Route path="/students" element={<StudentLandingPage />} />
         <Route
           path="/app"
           element={
