@@ -3,7 +3,16 @@ import * as db from '@/lib/db';
 import { chunkText } from '@/lib/chunk';
 import { embedTexts } from '@/lib/embeddings';
 import { parseFile, validateFile, FileTooLargeError, UnsupportedFileError } from '@/lib/parsers';
-import { DEFAULT_MODEL_ID, getContextWindowSize, getLoadedModelId, hasLoadedEngine, loadModel, streamChatCompletion, completeMessages } from '@/lib/llm';
+import {
+  DEFAULT_MODEL_ID,
+  getContextWindowSize,
+  getLoadedModelId,
+  hasLoadedEngine,
+  loadModel,
+  streamChatCompletion,
+  completeMessages,
+  looksLikeDeviceLoss,
+} from '@/lib/llm';
 import {
   completeLiteMessages,
   getLiteContextWindowSize,
@@ -37,6 +46,15 @@ function isOnboardingComplete(): boolean {
 
 function isLiteModeAccepted(): boolean {
   return localStorage.getItem(LITE_MODE_STORAGE_KEY) === 'true';
+}
+
+// The single source of truth for which engine is in play: WebGPU whenever
+// it's actually available, lite mode whenever it isn't (the only path for
+// browsers with no WebGPU at all) or whenever the user has explicitly opted
+// into it anyway (e.g. from Settings, after a GPU that "supports" WebGPU
+// keeps failing to actually create a working device).
+function computeLite(state: { webgpuStatus: WebGPUCapability; liteModeAccepted: boolean }): boolean {
+  return state.webgpuStatus !== 'available' || state.liteModeAccepted;
 }
 
 function autoTitle(firstUserMessage: string): string {
@@ -298,7 +316,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     try {
       await get().ensureModelLoaded();
-      const lite = get().webgpuStatus !== 'available';
+      const lite = computeLite(get());
       const stream = lite ? streamLiteChatCompletion : streamChatCompletion;
       const complete = lite ? completeLiteMessages : completeMessages;
 
@@ -398,18 +416,22 @@ export const useAppStore = create<AppState>((set, get) => ({
   liteModeAccepted: isLiteModeAccepted(),
   acceptLiteMode() {
     localStorage.setItem(LITE_MODE_STORAGE_KEY, 'true');
-    set({ liteModeAccepted: true });
+    // Reset the ready flag too: without this, a WebGPU model already marked
+    // ready would keep answering for the rest of the session instead of
+    // the next message actually switching engines.
+    set({ liteModeAccepted: true, modelReady: false, modelProgress: null });
   },
   modelProgress: null,
   modelReady: false,
   async ensureModelLoaded() {
-    const { modelId, webgpuStatus } = get();
+    const { modelId } = get();
 
-    // No WebGPU on this device: run the small CPU/WASM model instead of the
-    // full catalog. Only reachable once liteModeAccepted is true (AppPage
-    // gates on that), so this is always an informed choice, never a silent
-    // downgrade.
-    if (webgpuStatus !== 'available') {
+    // Either no WebGPU on this device, or the user explicitly opted into
+    // the CPU/WASM fallback anyway (see acceptLiteMode): run the small lite
+    // model instead of the full catalog. Reaching the no-WebGPU case is
+    // always an informed choice too (AppPage gates on liteModeAccepted),
+    // never a silent downgrade.
+    if (computeLite(get())) {
       if (get().modelReady && isLiteModelReady()) return;
       await loadLiteModel((progress) => set({ modelProgress: progress }));
       set({ modelReady: true, modelProgress: null });
@@ -423,8 +445,30 @@ export const useAppStore = create<AppState>((set, get) => ({
     // forever), and a stale mismatch here would otherwise mean the wrong
     // model answers the next message.
     if (get().modelReady && hasLoadedEngine() && getLoadedModelId() === modelId) return;
-    await loadModel(modelId, (progress) => set({ modelProgress: progress }));
-    set({ modelReady: true, modelProgress: null });
+
+    try {
+      await loadModel(modelId, (progress) => set({ modelProgress: progress }));
+      set({ modelReady: true, modelProgress: null });
+    } catch (err) {
+      set({ modelProgress: null });
+      // A crashed GPU process usually respawns within moments (this mirrors
+      // the same recovery streamChatCompletion does mid-conversation);
+      // loadModel() creates a fresh engine/device each call, so this really
+      // is a new attempt, not reusing whatever just failed.
+      if (looksLikeDeviceLoss(err)) {
+        try {
+          await loadModel(modelId, (progress) => set({ modelProgress: progress }));
+          set({ modelReady: true, modelProgress: null });
+          return;
+        } catch {
+          set({ modelProgress: null });
+          throw new Error(
+            "Your GPU had trouble loading the AI model, this usually means a graphics driver issue. Try reloading the page. If it keeps happening, you can switch to Lite mode (a smaller model that doesn't need a GPU) from Settings.",
+          );
+        }
+      }
+      throw err;
+    }
   },
   modelId: getStoredModelId(),
   modelSwitchError: null,

@@ -19,7 +19,9 @@ export default function ModelSelector() {
   const modelProgress = useAppStore((s) => s.modelProgress);
   const modelSwitchError = useAppStore((s) => s.modelSwitchError);
   const dismissModelSwitchError = useAppStore((s) => s.dismissModelSwitchError);
-  const lite = useAppStore((s) => s.webgpuStatus) !== 'available';
+  const webgpuStatus = useAppStore((s) => s.webgpuStatus);
+  const liteModeAccepted = useAppStore((s) => s.liteModeAccepted);
+  const lite = webgpuStatus !== 'available' || liteModeAccepted;
 
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState(false);

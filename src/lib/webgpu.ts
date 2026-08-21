@@ -1,6 +1,10 @@
+interface GPUAdapterLike {
+  requestDevice: () => Promise<{ destroy: () => void }>;
+}
+
 interface NavigatorWithGPU extends Navigator {
   gpu: {
-    requestAdapter: () => Promise<unknown>;
+    requestAdapter: () => Promise<GPUAdapterLike | null>;
   };
 }
 
@@ -31,6 +35,15 @@ export async function checkWebGPU(): Promise<WebGPUCheckResult> {
         reason: 'requestAdapter() returned null (no compatible GPU adapter).',
       };
     }
+    // An adapter existing isn't enough on its own: actually creating a
+    // device is what WebLLM needs to run the model, and that step can fail
+    // on its own even with a valid adapter (observed in production as
+    // "Failed to execute 'requestDevice' ... DXGI_ERROR_DEVICE_REMOVED", a
+    // crashed/reset GPU driver), a failure mode requestAdapter() alone never
+    // catches. Immediately destroying the device is fine: this is only a
+    // capability probe, WebLLM creates its own device when it actually loads.
+    const device = await adapter.requestDevice();
+    device.destroy();
     return { available: true, kind: 'ok', reason: null };
   } catch (err) {
     const reason = err instanceof Error ? `${err.name}: ${err.message}` : String(err);

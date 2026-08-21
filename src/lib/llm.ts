@@ -172,7 +172,7 @@ export function hasLoadedEngine(): boolean {
 // and recommend simply reloading. Recognizing that pattern lets chat
 // recover on its own instead of leaving the user stuck on a dead engine
 // with only a generic failure message.
-function looksLikeDeviceLoss(err: unknown): boolean {
+export function looksLikeDeviceLoss(err: unknown): boolean {
   const message = (err instanceof Error ? err.message : String(err)).toLowerCase();
   return /device|adapter|webgpu|gpu process|lost connection|context.*(lost|destroyed)/.test(message);
 }
