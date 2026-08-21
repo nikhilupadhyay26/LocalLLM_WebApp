@@ -16,8 +16,13 @@ export default function AppShell({ selectedIds, onToggle, onLoadSession, onNewCh
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen flex-col">
-      <TopBar onMenuClick={() => setSidebarOpen(true)} />
+    // h-dvh, not h-screen: 100vh on mobile browsers is measured against the
+    // viewport with the address bar hidden, taller than what's actually
+    // visible once it's shown, which was pushing the composer below the
+    // fold and forcing a scroll to reach it. 100dvh tracks the real visible
+    // height as the browser chrome shows/hides.
+    <div className="flex h-dvh flex-col">
+      <TopBar sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen((o) => !o)} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
           selectedIds={selectedIds}

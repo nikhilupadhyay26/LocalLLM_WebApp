@@ -23,22 +23,26 @@ export default function NetworkIndicator() {
   const isClean = dataRequests.length === 0;
 
   return (
-    <div className="relative">
+    <div className="relative shrink-0">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 rounded-full border border-ink-700 bg-ink-900 px-3 py-1.5 text-xs font-mono
-          text-secondary hover:border-ink-500"
+        className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-ink-700 bg-ink-900 px-2 py-1.5 text-xs
+          font-mono text-secondary hover:border-ink-500 sm:gap-2 sm:px-3"
         aria-expanded={open}
-        aria-label="Network activity"
+        aria-label={`Network activity: ${dataRequests.length} data request${dataRequests.length === 1 ? '' : 's'} this session`}
       >
         <span
-          className={`h-1.5 w-1.5 rounded-full ${isClean ? 'bg-signal' : 'bg-amber-400'} ${
+          className={`h-1.5 w-1.5 shrink-0 rounded-full ${isClean ? 'bg-signal' : 'bg-amber-400'} ${
             isClean ? '' : 'animate-pulse-slow'
           }`}
           aria-hidden="true"
         />
-        {dataRequests.length} data request{dataRequests.length === 1 ? '' : 's'} this session
+        {/* Full sentence once there's room; just the count on narrow (mobile) headers, where the sentence was overlapping the logo. */}
+        <span className="sm:hidden">{dataRequests.length}</span>
+        <span className="hidden sm:inline">
+          {dataRequests.length} data request{dataRequests.length === 1 ? '' : 's'} this session
+        </span>
       </button>
 
       {open && (

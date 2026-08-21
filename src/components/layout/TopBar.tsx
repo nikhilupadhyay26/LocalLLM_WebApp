@@ -4,7 +4,12 @@ import { useUiStore } from '@/store/useUiStore';
 import NetworkIndicator from '@/components/common/NetworkIndicator';
 import { MODEL_LABEL } from '@/lib/llm';
 
-export default function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
+interface TopBarProps {
+  sidebarOpen: boolean;
+  onToggleSidebar: () => void;
+}
+
+export default function TopBar({ sidebarOpen, onToggleSidebar }: TopBarProps) {
   const modelReady = useAppStore((s) => s.modelReady);
   const modelProgress = useAppStore((s) => s.modelProgress);
   const setHelpModalOpen = useUiStore((s) => s.setHelpModalOpen);
@@ -16,23 +21,23 @@ export default function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
       : `${MODEL_LABEL} not loaded yet`;
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-ink-800 px-4">
-      <div className="flex items-center gap-2">
+    <header className="flex h-14 items-center justify-between gap-2 border-b border-ink-800 px-4">
+      <div className="flex min-w-0 items-center gap-2">
         <button
           type="button"
-          onClick={onMenuClick}
-          className="btn-ghost !px-2 !py-1.5 text-lg md:hidden"
-          aria-label="Open menu"
+          onClick={onToggleSidebar}
+          className="btn-ghost shrink-0 !px-2 !py-1.5 text-lg md:hidden"
+          aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
         >
-          ☰
+          {sidebarOpen ? '✕' : '☰'}
         </button>
-        <Link to="/" className="flex items-center gap-2.5 text-base font-semibold text-primary">
-          <img src="/icon.png" alt="" className="h-9 w-9 rounded-md" />
+        <Link to="/" className="flex min-w-0 shrink-0 items-center gap-2.5 text-base font-semibold text-primary">
+          <img src="/icon.png" alt="" className="h-9 w-9 shrink-0 rounded-md" />
           PouchLM
         </Link>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 shrink items-center gap-2 sm:gap-3">
         <span className="mono-tag hidden sm:inline">{modelStatusText}</span>
 
         <NetworkIndicator />
