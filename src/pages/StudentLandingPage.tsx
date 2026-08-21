@@ -49,7 +49,7 @@ export default function StudentLandingPage() {
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link to="/app" className="btn-primary !px-6 !py-3 text-[15px]">
-            Try it now — free, forever.
+            Try it now, free forever.
           </Link>
           <a href="#why-free" className="btn-secondary !px-6 !py-3 text-[15px]">
             See what you can do with it
