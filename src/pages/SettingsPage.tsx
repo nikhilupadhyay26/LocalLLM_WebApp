@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { clearAllLocalData, estimateStorageUsage } from '@/lib/db';
 import { useAppStore } from '@/store/useAppStore';
-import { DEFAULT_MODEL_ID, MODEL_LABEL, MODEL_SIZE, getModelDisplayName } from '@/lib/llm';
+import { getModelDisplayName } from '@/lib/llm';
 import { LITE_MODEL_LABEL, LITE_MODEL_SIZE } from '@/lib/liteLlm';
 import Modal from '@/components/common/Modal';
 import ModelDownloadReassurances from '@/components/common/ModelDownloadReassurances';
@@ -77,11 +77,6 @@ export default function SettingsPage() {
                 : "This browser doesn't support the faster GPU-based engine, so PouchLM automatically switched to this smaller model that runs on your CPU instead."}{' '}
               Replies are slower than the full model, but nothing changes about privacy: it still never leaves your
               device.
-            </>
-          ) : modelId === DEFAULT_MODEL_ID ? (
-            <>
-              PouchLM runs the {MODEL_LABEL} ({MODEL_SIZE}) entirely on your device. You can pick a different
-              model from the menu above the chat box.
             </>
           ) : (
             <>

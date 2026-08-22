@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom';
 import { useAppStore } from '@/store/useAppStore';
 import { useUiStore } from '@/store/useUiStore';
 import NetworkIndicator from '@/components/common/NetworkIndicator';
-import { MODEL_LABEL } from '@/lib/llm';
+import { getModelDisplayName } from '@/lib/llm';
+import { LITE_MODEL_LABEL } from '@/lib/liteLlm';
 
 interface TopBarProps {
   sidebarOpen: boolean;
@@ -12,13 +13,18 @@ interface TopBarProps {
 export default function TopBar({ sidebarOpen, onToggleSidebar }: TopBarProps) {
   const modelReady = useAppStore((s) => s.modelReady);
   const modelProgress = useAppStore((s) => s.modelProgress);
+  const modelId = useAppStore((s) => s.modelId);
+  const webgpuStatus = useAppStore((s) => s.webgpuStatus);
+  const liteModeAccepted = useAppStore((s) => s.liteModeAccepted);
   const setHelpModalOpen = useUiStore((s) => s.setHelpModalOpen);
 
+  const lite = webgpuStatus !== 'available' || liteModeAccepted;
+  const modelLabel = lite ? LITE_MODEL_LABEL : getModelDisplayName(modelId);
   const modelStatusText = modelReady
-    ? `${MODEL_LABEL} · ready`
+    ? `${modelLabel} · ready`
     : modelProgress
-      ? `Loading ${MODEL_LABEL} · ${Math.round(modelProgress.progress * 100)}%`
-      : `${MODEL_LABEL} not loaded yet`;
+      ? `Loading ${modelLabel} · ${Math.round(modelProgress.progress * 100)}%`
+      : `${modelLabel} not loaded yet`;
 
   return (
     <header className="flex h-14 items-center justify-between gap-2 border-b border-ink-800 px-4">

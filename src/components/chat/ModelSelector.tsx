@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { DEFAULT_MODEL_ID, MODEL_LABEL, getModelCatalog, getModelDisplayName, isModelCached } from '@/lib/llm';
+import { getModelCatalog, getModelDisplayName, isModelCached } from '@/lib/llm';
 import { LITE_MODEL_LABEL } from '@/lib/liteLlm';
 import Modal from '@/components/common/Modal';
 import ModelDownloadReassurances from '@/components/common/ModelDownloadReassurances';
@@ -29,7 +29,7 @@ export default function ModelSelector() {
   const [rows, setRows] = useState<CatalogRow[] | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const currentLabel = modelId === DEFAULT_MODEL_ID ? MODEL_LABEL : getModelDisplayName(modelId);
+  const currentLabel = getModelDisplayName(modelId);
 
   // Cache status is checked fresh each time the list opens rather than once
   // up front: it can change between opens (e.g. right after a download).

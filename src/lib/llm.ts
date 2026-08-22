@@ -7,12 +7,11 @@ import {
 } from '@mlc-ai/web-llm';
 import type { ModelLoadProgress } from '@/types';
 
-// The model everyone starts on: small enough to load quickly and run
-// comfortably on modest hardware. Anyone can switch to a different one from
-// the model picker; this is only the first-ever default.
-export const DEFAULT_MODEL_ID = 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC';
-export const MODEL_LABEL = 'AI model';
-export const MODEL_SIZE = '~1GB';
+// The model everyone starts on: the smallest in the catalog, so the very
+// first download is as fast and low-risk as possible. Anyone can switch to
+// a larger, more capable one from the model picker; this is only the
+// first-ever default.
+export const DEFAULT_MODEL_ID = 'SmolLM2-135M-Instruct-q0f16-MLC';
 
 // WebLLM's full catalog (160+ entries) includes models far too large to run
 // reliably on typical hardware. Anything above this VRAM footprint is
@@ -101,8 +100,11 @@ export function getModelCatalog(): ModelCatalogEntry[] {
 }
 
 export function getModelDisplayName(modelId: string): string {
-  if (modelId === DEFAULT_MODEL_ID) return MODEL_LABEL;
   return getModelCatalog().find((m) => m.id === modelId)?.displayName ?? baseNameOf(modelId).replace(/-/g, ' ');
+}
+
+export function getModelSizeLabel(modelId: string): string {
+  return getModelCatalog().find((m) => m.id === modelId)?.sizeLabel ?? '';
 }
 
 export function isModelCached(modelId: string): Promise<boolean> {

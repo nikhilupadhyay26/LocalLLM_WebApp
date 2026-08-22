@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { isMeteredConnection } from '@/lib/webgpu';
 import { SUPPORT_BLURB } from '@/lib/support';
-import { MODEL_SIZE } from '@/lib/llm';
-import { LITE_MODEL_SIZE } from '@/lib/liteLlm';
+import { getModelDisplayName, getModelSizeLabel } from '@/lib/llm';
+import { LITE_MODEL_LABEL, LITE_MODEL_SIZE } from '@/lib/liteLlm';
 import { getErrorMessage } from '@/lib/errors';
 import ModelDownloadReassurances from '@/components/common/ModelDownloadReassurances';
 import ModelDownloadProgressBar from '@/components/common/ModelDownloadProgressBar';
@@ -12,6 +12,7 @@ export default function FirstRunScreen({ onReady }: { onReady: () => void }) {
   const modelProgress = useAppStore((s) => s.modelProgress);
   const modelReady = useAppStore((s) => s.modelReady);
   const ensureModelLoaded = useAppStore((s) => s.ensureModelLoaded);
+  const modelId = useAppStore((s) => s.modelId);
   const webgpuStatus = useAppStore((s) => s.webgpuStatus);
   const liteModeAccepted = useAppStore((s) => s.liteModeAccepted);
   // Not just "no WebGPU": a low-memory device can have working WebGPU and
@@ -49,14 +50,14 @@ export default function FirstRunScreen({ onReady }: { onReady: () => void }) {
         <p className="mb-6 text-sm text-secondary">
           {lite ? (
             <>
-              We're downloading the Lite AI model straight to your browser ({LITE_MODEL_SIZE}). It runs on your
-              device's CPU rather than a GPU, so replies are slower than PouchLM's full model, but this still
+              We're downloading the {LITE_MODEL_LABEL} straight to your browser ({LITE_MODEL_SIZE}). It runs on
+              your device's CPU rather than a GPU, so replies are slower than PouchLM's full model, but this still
               happens once. After this, everything runs offline.
             </>
           ) : (
             <>
-              We're downloading a compact AI model straight to your browser ({MODEL_SIZE}). This happens once.
-              After this, everything runs instantly, even offline.
+              We're downloading {getModelDisplayName(modelId)} straight to your browser ({getModelSizeLabel(modelId)}
+              ). This happens once. After this, everything runs instantly, even offline.
             </>
           )}
         </p>

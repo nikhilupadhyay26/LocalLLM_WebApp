@@ -1,14 +1,13 @@
 import { useAppStore } from '@/store/useAppStore';
-import { MODEL_SIZE } from '@/lib/llm';
 import { LITE_MODEL_LABEL, LITE_MODEL_SIZE } from '@/lib/liteLlm';
 
 /**
  * Shown once, before onboarding starts, only when isLowMemoryDevice() flags
- * the device as low-memory (see webgpu.ts). WebGPU itself may work fine
- * here, this isn't about capability, it's about the ~1GB download and the
- * memory it takes to run being a real risk (slow, or a killed browser tab)
- * on a device this constrained, so the choice is offered upfront rather
- * than after someone hits trouble mid-download.
+ * the device as low-memory (see webgpu.ts). Not about download size, the
+ * default model is small either way now, it's that a low-memory device
+ * often also has a weak or shared-memory GPU, which makes WebGPU less
+ * reliable there (see the device-loss handling in useAppStore.ts). Lite
+ * mode sidesteps that entirely by never touching the GPU at all.
  */
 export default function LowMemoryPrompt() {
   const acceptLiteMode = useAppStore((s) => s.acceptLiteMode);
@@ -20,13 +19,13 @@ export default function LowMemoryPrompt() {
         <p className="mono-tag mb-3">Device check</p>
         <h1 className="mb-3 text-xl font-medium text-primary">This looks like a lower-memory device</h1>
         <p className="text-sm text-secondary">
-          PouchLM's full model is a {MODEL_SIZE} download and uses a fair amount of memory to run. On a device
-          like this, that can be slow to download, or risk running out of memory partway through.
+          PouchLM's full experience uses your device's GPU (via WebGPU) to run the AI model. Lower-memory
+          devices often have a weaker or shared-memory graphics processor, which can make that less reliable.
         </p>
         <p className="mt-3 text-sm text-secondary">
-          We'd recommend the {LITE_MODEL_LABEL} instead: a much smaller {LITE_MODEL_SIZE} download that's
-          lighter to run. The tradeoff is real, replies are slower since it runs on your CPU instead of a GPU,
-          but it's far less likely to run into trouble on a device like this.
+          We'd recommend the {LITE_MODEL_LABEL} instead: a similarly small {LITE_MODEL_SIZE} download that runs
+          entirely on your device's CPU, no GPU needed at all. The tradeoff is real, replies are slower, but
+          it's far less likely to run into trouble on a device like this.
         </p>
         <button type="button" onClick={acceptLiteMode} className="btn-primary mt-4 w-full">
           Use Lite mode (recommended)
