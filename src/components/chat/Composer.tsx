@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 import Modal from '@/components/common/Modal';
 import ModelDownloadReassurances from '@/components/common/ModelDownloadReassurances';
@@ -12,12 +12,25 @@ interface ComposerProps {
 
 export default function Composer({ onSend, disabled, placeholder }: ComposerProps) {
   const [value, setValue] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { recording, transcribing, modelLoading, modelProgress, error, toggle, dismissError } = useVoiceInput({
     onTranscript: (text) => {
       setValue((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
     },
   });
+
+  // Grows with content up to the CSS max-height on the textarea below, then
+  // its own scrollbar takes over, instead of staying pinned at a single
+  // line no matter how long the message gets. Resetting to 'auto' first
+  // (rather than only ever growing) is what lets it shrink back down too,
+  // e.g. after deleting text or sending the message.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
 
   const submit = () => {
     const trimmed = value.trim();
@@ -51,13 +64,14 @@ export default function Composer({ onSend, disabled, placeholder }: ComposerProp
 
       <form onSubmit={onFormSubmit} className="flex items-end gap-2 p-3">
         <textarea
+          ref={textareaRef}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={onKeyDown}
           rows={1}
           placeholder={placeholder ?? 'Ask about your documents…'}
           aria-label="Message"
-          className="input max-h-40 flex-1 resize-none"
+          className="input max-h-40 flex-1 resize-none overflow-y-auto"
         />
         <button
           type="button"
