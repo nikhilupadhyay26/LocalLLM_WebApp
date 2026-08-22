@@ -99,8 +99,13 @@ interface AppState {
   ensureModelLoaded: () => Promise<void>;
   modelId: string;
   setModelId: (id: string) => Promise<void>;
-  modelSwitchError: string | null;
-  dismissModelSwitchError: () => void;
+  // Not switch-specific despite the shape: set on any engine failure (a
+  // failed switch, or the automatic load a returning visit does), so the
+  // one persistent banner near the composer is the single reliable place
+  // to see "something's wrong" and get to Lite mode, regardless of which
+  // code path actually failed.
+  engineError: string | null;
+  dismissEngineError: () => void;
   onboardingComplete: boolean;
   completeOnboarding: () => void;
 }
@@ -462,37 +467,43 @@ export const useAppStore = create<AppState>((set, get) => ({
           return;
         } catch {
           set({ modelProgress: null });
-          throw new Error(
-            "Your GPU had trouble loading the AI model, this usually means a graphics driver issue. Try reloading the page. If it keeps happening, you can switch to Lite mode (a smaller model that doesn't need a GPU) from Settings.",
-          );
+          const message =
+            'Your GPU had trouble loading the AI model, this usually means a graphics driver issue. Try reloading the page, or switch to Lite mode below, a smaller model that runs on your CPU instead.';
+          set({ engineError: message });
+          throw new Error(message);
         }
       }
       throw err;
     }
   },
   modelId: getStoredModelId(),
-  modelSwitchError: null,
-  dismissModelSwitchError() {
-    set({ modelSwitchError: null });
+  engineError: null,
+  dismissEngineError() {
+    set({ engineError: null });
   },
   async setModelId(newModelId) {
     const previousModelId = get().modelId;
     if (newModelId === previousModelId && hasLoadedEngine() && getLoadedModelId() === newModelId) return;
 
-    set({ modelSwitchError: null, modelProgress: null, modelReady: false });
+    set({ engineError: null, modelProgress: null, modelReady: false });
     try {
       await loadModel(newModelId, (progress) => set({ modelProgress: progress }));
       localStorage.setItem(MODEL_ID_STORAGE_KEY, newModelId);
       set({ modelId: newModelId, modelReady: true, modelProgress: null });
     } catch (err) {
-      const message = getErrorMessage(err, 'Could not load this model.');
+      // A device-loss-shaped failure isn't really about THIS model choice
+      // (it'll fail loading any model the same way), so say that plainly
+      // instead of implying the specific model was the problem.
+      const message = looksLikeDeviceLoss(err)
+        ? 'Your GPU had trouble loading this model, this usually means a graphics driver issue, not something specific to this model. Try reloading the page, or switch to Lite mode below.'
+        : getErrorMessage(err, 'Could not load this model.');
       // Never leave the user on a broken engine with no usable model at
       // all: fall back to whatever was actually working before this switch.
       try {
         await loadModel(previousModelId, (progress) => set({ modelProgress: progress }));
-        set({ modelId: previousModelId, modelReady: true, modelProgress: null, modelSwitchError: message });
+        set({ modelId: previousModelId, modelReady: true, modelProgress: null, engineError: message });
       } catch {
-        set({ modelSwitchError: message, modelProgress: null });
+        set({ engineError: message, modelProgress: null });
       }
     }
   },

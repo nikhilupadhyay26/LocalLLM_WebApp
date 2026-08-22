@@ -17,10 +17,11 @@ export default function ModelSelector() {
   const modelId = useAppStore((s) => s.modelId);
   const setModelId = useAppStore((s) => s.setModelId);
   const modelProgress = useAppStore((s) => s.modelProgress);
-  const modelSwitchError = useAppStore((s) => s.modelSwitchError);
-  const dismissModelSwitchError = useAppStore((s) => s.dismissModelSwitchError);
+  const engineError = useAppStore((s) => s.engineError);
+  const dismissEngineError = useAppStore((s) => s.dismissEngineError);
   const webgpuStatus = useAppStore((s) => s.webgpuStatus);
   const liteModeAccepted = useAppStore((s) => s.liteModeAccepted);
+  const acceptLiteMode = useAppStore((s) => s.acceptLiteMode);
   const lite = webgpuStatus !== 'available' || liteModeAccepted;
 
   const [open, setOpen] = useState(false);
@@ -113,11 +114,16 @@ export default function ModelSelector() {
         </div>
       )}
 
-      {modelSwitchError && (
-        <div className="mb-2 flex items-start justify-between gap-2 rounded-md border border-amber-700/40 bg-amber-950/30 px-2 py-1.5 text-xs text-amber-200">
-          <span>{modelSwitchError}</span>
-          <button type="button" onClick={dismissModelSwitchError} className="shrink-0" aria-label="Dismiss">
-            ✕
+      {engineError && (
+        <div className="mb-2 rounded-md border border-amber-700/40 bg-amber-950/30 px-2 py-1.5 text-xs text-amber-200">
+          <div className="flex items-start justify-between gap-2">
+            <span>{engineError}</span>
+            <button type="button" onClick={dismissEngineError} className="shrink-0" aria-label="Dismiss">
+              ✕
+            </button>
+          </div>
+          <button type="button" onClick={acceptLiteMode} className="btn-secondary mt-2 !py-1 text-xs">
+            Switch to Lite mode
           </button>
         </div>
       )}
