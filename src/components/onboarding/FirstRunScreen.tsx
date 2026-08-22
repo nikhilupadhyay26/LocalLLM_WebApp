@@ -12,7 +12,12 @@ export default function FirstRunScreen({ onReady }: { onReady: () => void }) {
   const modelProgress = useAppStore((s) => s.modelProgress);
   const modelReady = useAppStore((s) => s.modelReady);
   const ensureModelLoaded = useAppStore((s) => s.ensureModelLoaded);
-  const lite = useAppStore((s) => s.webgpuStatus) !== 'available';
+  const webgpuStatus = useAppStore((s) => s.webgpuStatus);
+  const liteModeAccepted = useAppStore((s) => s.liteModeAccepted);
+  // Not just "no WebGPU": a low-memory device can have working WebGPU and
+  // still land here already opted into Lite mode (see LowMemoryPrompt),
+  // which webgpuStatus alone wouldn't reflect.
+  const lite = webgpuStatus !== 'available' || liteModeAccepted;
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [metered] = useState(isMeteredConnection);

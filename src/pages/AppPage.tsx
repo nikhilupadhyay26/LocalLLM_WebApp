@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { useWebGPUCheck } from '@/hooks/useWebGPU';
+import { isLowMemoryDevice } from '@/lib/webgpu';
 import UnsupportedBrowser from '@/components/onboarding/UnsupportedBrowser';
+import LowMemoryPrompt from '@/components/onboarding/LowMemoryPrompt';
 import FirstRunScreen from '@/components/onboarding/FirstRunScreen';
 import AppShell from '@/components/layout/AppShell';
 import ChatPanel from '@/components/chat/ChatPanel';
@@ -10,7 +12,9 @@ export default function AppPage() {
   const webgpuStatus = useWebGPUCheck();
   const hasEverFailedWebgpu = useAppStore((s) => s.hasEverFailedWebgpu);
   const liteModeAccepted = useAppStore((s) => s.liteModeAccepted);
+  const lowMemoryPromptDismissed = useAppStore((s) => s.lowMemoryPromptDismissed);
   const onboardingComplete = useAppStore((s) => s.onboardingComplete);
+  const [isLowMemory] = useState(isLowMemoryDevice);
   const completeOnboarding = useAppStore((s) => s.completeOnboarding);
   const loadDocuments = useAppStore((s) => s.loadDocuments);
   const loadChatSessions = useAppStore((s) => s.loadChatSessions);
@@ -78,6 +82,13 @@ export default function AppPage() {
   }
   if (webgpuStatus !== 'available' && !liteModeAccepted) {
     return <UnsupportedBrowser />;
+  }
+  // Not about capability (WebGPU works fine here), about a not-yet-onboarded
+  // visitor risking a slow download or a killed tab from the full model's
+  // memory footprint. Only ever shown once: dismissing it, or picking Lite
+  // mode, both persist so this never nags a returning visitor.
+  if (isLowMemory && !liteModeAccepted && !lowMemoryPromptDismissed && !onboardingComplete) {
+    return <LowMemoryPrompt />;
   }
   if (!onboardingComplete) {
     return <FirstRunScreen onReady={completeOnboarding} />;

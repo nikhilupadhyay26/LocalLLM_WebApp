@@ -91,3 +91,17 @@ export function isMeteredConnection(): boolean {
   if (connection.type === 'cellular') return true;
   return false;
 }
+
+// A ~1GB download plus what it takes to actually run that model is a real
+// risk on a low-memory device: slow at best, a killed browser tab at worst.
+// Only Chromium browsers report this at all (Firefox and Safari never
+// implemented the Device Memory API); treating "unsupported" as "not low
+// memory" is deliberate, since assuming the worst for a browser that simply
+// doesn't report anything would wrongly flag every Firefox/Safari visitor.
+const LOW_MEMORY_THRESHOLD_GB = 4;
+
+export function isLowMemoryDevice(): boolean {
+  const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+  if (deviceMemory === undefined) return false;
+  return deviceMemory <= LOW_MEMORY_THRESHOLD_GB;
+}

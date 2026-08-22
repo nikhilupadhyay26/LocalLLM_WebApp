@@ -30,6 +30,7 @@ const ACTIVE_CHAT_STORAGE_KEY = 'pouchlm_active_chat_id';
 const ONBOARDING_STORAGE_KEY = 'pouchlm_onboarding_complete';
 const MODEL_ID_STORAGE_KEY = 'pouchlm_model_id';
 const LITE_MODE_STORAGE_KEY = 'pouchlm_lite_mode_accepted';
+const LOW_MEMORY_PROMPT_STORAGE_KEY = 'pouchlm_low_memory_prompt_dismissed';
 
 function persistActiveChatId(id: string | null) {
   if (id) localStorage.setItem(ACTIVE_CHAT_STORAGE_KEY, id);
@@ -46,6 +47,10 @@ function isOnboardingComplete(): boolean {
 
 function isLiteModeAccepted(): boolean {
   return localStorage.getItem(LITE_MODE_STORAGE_KEY) === 'true';
+}
+
+function isLowMemoryPromptDismissed(): boolean {
+  return localStorage.getItem(LOW_MEMORY_PROMPT_STORAGE_KEY) === 'true';
 }
 
 // The single source of truth for which engine is in play: WebGPU whenever
@@ -95,6 +100,12 @@ interface AppState {
   // tradeoff (smaller model, slower generation) from the onboarding screen.
   liteModeAccepted: boolean;
   acceptLiteMode: () => void;
+  // Only meaningful for a not-yet-onboarded visitor on a device that
+  // reports low memory (see isLowMemoryDevice): lets them dismiss the
+  // upfront Lite mode recommendation and proceed with the full model
+  // anyway, without being asked again on every future visit.
+  lowMemoryPromptDismissed: boolean;
+  dismissLowMemoryPrompt: () => void;
   modelProgress: ModelLoadProgress | null;
   modelReady: boolean;
   ensureModelLoaded: () => Promise<void>;
@@ -431,6 +442,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     // ready would keep answering for the rest of the session instead of
     // the next message actually switching engines.
     set({ liteModeAccepted: true, modelReady: false, modelProgress: null });
+  },
+  lowMemoryPromptDismissed: isLowMemoryPromptDismissed(),
+  dismissLowMemoryPrompt() {
+    localStorage.setItem(LOW_MEMORY_PROMPT_STORAGE_KEY, 'true');
+    set({ lowMemoryPromptDismissed: true });
   },
   modelProgress: null,
   modelReady: false,
