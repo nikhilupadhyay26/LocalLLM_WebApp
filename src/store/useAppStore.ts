@@ -87,6 +87,7 @@ interface AppState {
   webgpuStatus: WebGPUCapability;
   webgpuFailureReason: string | null;
   webgpuFailureKind: WebGPUCheckResult['kind'] | null;
+  hasEverFailedWebgpu: boolean;
   checkWebGpuSupport: () => Promise<void>;
   // Devices with no WebGPU at all (webgpuFailureKind === 'no-api') can still
   // run a much smaller model on CPU/WASM instead of being a dead end. This
@@ -409,6 +410,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   webgpuStatus: 'checking',
   webgpuFailureReason: null,
   webgpuFailureKind: null,
+  // Sticky once true, never reset back to false by checkWebGpuSupport: lets
+  // AppPage tell "the very first check, ever" apart from "a recheck while
+  // UnsupportedBrowser's own retry loop is running" (see AppPage.tsx).
+  hasEverFailedWebgpu: false,
   async checkWebGpuSupport() {
     set({ webgpuStatus: 'checking', webgpuFailureReason: null, webgpuFailureKind: null });
     const result = await checkWebGPUWithRetries();
@@ -416,6 +421,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       webgpuStatus: result.available ? 'available' : 'unavailable',
       webgpuFailureReason: result.reason,
       webgpuFailureKind: result.kind,
+      hasEverFailedWebgpu: get().hasEverFailedWebgpu || !result.available,
     });
   },
   liteModeAccepted: isLiteModeAccepted(),

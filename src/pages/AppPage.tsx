@@ -8,6 +8,7 @@ import ChatPanel from '@/components/chat/ChatPanel';
 
 export default function AppPage() {
   const webgpuStatus = useWebGPUCheck();
+  const hasEverFailedWebgpu = useAppStore((s) => s.hasEverFailedWebgpu);
   const liteModeAccepted = useAppStore((s) => s.liteModeAccepted);
   const onboardingComplete = useAppStore((s) => s.onboardingComplete);
   const completeOnboarding = useAppStore((s) => s.completeOnboarding);
@@ -65,10 +66,17 @@ export default function AppPage() {
     setSelectedIds([]);
   };
 
-  if (webgpuStatus === 'checking') {
+  // Only the very first check ever shows the bare loading screen. Once
+  // we've seen a failure, UnsupportedBrowser owns its own retry loop and
+  // must stay mounted through every subsequent 'checking' status a retry
+  // produces, or its retry-count state resets to zero every single cycle
+  // (found by testing: the "continue in Lite mode instead" escape hatch
+  // could never actually appear, since the count never got the chance to
+  // reach its threshold before the component was torn down and rebuilt).
+  if (webgpuStatus === 'checking' && !hasEverFailedWebgpu) {
     return <div className="flex min-h-screen items-center justify-center text-muted">Checking your browser…</div>;
   }
-  if (webgpuStatus === 'unavailable' && !liteModeAccepted) {
+  if (webgpuStatus !== 'available' && !liteModeAccepted) {
     return <UnsupportedBrowser />;
   }
   if (!onboardingComplete) {
