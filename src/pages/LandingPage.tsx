@@ -33,7 +33,7 @@ export default function LandingPage() {
 
       <main className="mx-auto max-w-3xl px-6 py-20 text-center">
         <h1 className="mb-4 text-4xl font-medium !leading-tight tracking-tight text-primary sm:text-5xl">
-          AI that runs entirely in your browser.
+          AI that runs entirely in your browser
         </h1>
         <p className="mx-auto mb-12 max-w-xl text-base text-secondary lg:text-lg">
           No servers, no uploads, nothing sent anywhere. See what that means for you:
@@ -58,7 +58,7 @@ export default function LandingPage() {
 
         <p className="mt-8 text-xs text-muted">
           <Link to="/app" className="underline underline-offset-2 hover:text-secondary">
-            Just take me to the app.
+            Just take me to the app
           </Link>
         </p>
       </main>

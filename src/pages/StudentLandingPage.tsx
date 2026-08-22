@@ -40,8 +40,8 @@ export default function StudentLandingPage() {
       <main className="mx-auto max-w-3xl px-6 pb-24 pt-16 text-center">
         <p className="mono-tag mb-4 inline-block">100% local · Always free</p>
         <h1 className="mb-5 text-[2.5rem] font-medium !leading-tight tracking-tight text-primary sm:text-4xl lg:text-5xl">
-          Free AI. No subscription.
-          <span className="block">No catch.</span>
+          Free AI, no subscription
+          <span className="block">No catch</span>
         </h1>
         <p className="mx-auto mb-8 max-w-xl text-base text-secondary lg:text-lg">
           It runs entirely on your own device instead of a server, so there's no ongoing cost to pass on to you.
@@ -49,7 +49,7 @@ export default function StudentLandingPage() {
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link to="/app" className="btn-primary !px-6 !py-3 text-[15px]">
-            Try it now, free forever.
+            Try it now, free forever
           </Link>
           <a href="#why-free" className="btn-secondary !px-6 !py-3 text-[15px]">
             See what you can do with it
